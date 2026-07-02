@@ -1,28 +1,14 @@
 # Xeno Breach
 
-A top-down survival shooter on procedurally generated rocky planets. Built with Python, pygame-ce, numpy, and the `noise` library.
+A top-down survival shooter where you fight waves of alien creatures on procedurally generated rocky planets. Built with Python and pygame-ce.
 
-## Features
-
-- **Procedural terrain** — fBm simplex noise heightfields with impact craters, slope-based shading, and 5-tier elevation coloring
-- **4 enemy types** — Drone (baseline), Runner (fast swarmer), Brute (tank with charge attack), Spitter (ranged acid projectiles)
-- **Elite variants** — Gamma (green, +50% HP), Alpha (red, enraged), Corrupted (purple, acid trail)
-- **3 weapons** — Pulse rifle, shotgun, flamethrower with distinct feel and stats
-- **4 biomes** — Barren wasteland, polar ice field, crater field, highland plateau
-- **Wave director** — Escalating difficulty with enemy type progression by wave number
-- **Objectives** — Survive, reach beacon, defend position, scavenge supply caches + extraction
-- **32×32 pixel art sprites** — Designed via JSON coordinate data, rendered with Pillow
-- **Procedural audio** — 11 sound effects synthesized from numpy waveforms, no external files
-- **Game-feel juice** — Screen shake, hit markers, floating damage numbers, kill combos, low-health vignette, off-screen enemy indicators, reload progress bar
-- **AI-generated splash art** — Title screen and game-over backgrounds
-
-## Installation
+## Install
 
 ```bash
 pip install pygame-ce numpy noise pillow
 ```
 
-## Running
+## Play
 
 ```bash
 python main.py
@@ -34,63 +20,47 @@ python main.py
 |-----|--------|
 | WASD / Arrows | Move |
 | Mouse | Aim |
-| LMB | Fire |
-| 1/2/3 | Switch weapons |
+| Left Click | Fire |
+| 1 / 2 / 3 | Switch weapons |
 | R | Reload |
 | Shift | Sprint |
-| M | Mute audio |
+| ESC | Pause |
+| M | Mute |
 | F1 | Debug overlay |
-| ESC | Pause / Quit |
-| Space | Deploy / Confirm |
+
+## What's In The Game
+
+**Combat** — Three weapons (pulse rifle, shotgun, flamethrower) with distinct feel. Hit markers, damage numbers, screen shake, kill combos.
+
+**Enemies** — Four types that get harder as waves progress:
+- **Drone** — Standard alien, patrols then lunges
+- **Runner** — Fast and fragile, always chasing
+- **Brute** — Slow tank, telegraphed charge attack, enrages at half HP
+- **Spitter** — Keeps distance, fires acid projectiles
+
+**Elites** — Random glowing variants with bonus HP and better salvage drops.
+
+**Meta-Progression** — Earn salvage from kills and extractions. Spend it in the armory on 8 permanent upgrades (health, regen, ammo, fire rate, acid resistance, scanner range, speed, salvage multiplier). Saves automatically between sessions.
+
+**Procedural Terrain** — Every run generates a different planet with fBm noise heightfields, impact craters, rock props, and one of four biomes (barren, polar, cratered, highland).
+
+**Game Flow** — Menu → Armory (optional) → Briefing → Survive waves + complete objective → Extract → Spend salvage → Repeat.
+
+**Atmosphere** — Procedural sound effects (no audio files), AI-generated splash art, motion tracker radar, low-health vignette, off-screen enemy indicators.
 
 ## Project Structure
 
 ```
-xeno_shooter/
-├── main.py                    # Game loop, state machine, combat integration
-├── config.py                  # All game constants + DESIGN.md color tokens
-├── DESIGN.md                  # Google DESIGN.md visual token spec
-├── IMPLEMENTATION_PLAN.md     # Phases 1-4 plan
-├── IMPLEMENTATION_PLAN_PHASE5_PLUS.md  # Phase 5+ expansion plan
-├── generate_sprites.py        # Generates animation frames from base JSON sprites
-├── design_32x32.py            # 32×32 base sprite designer
-├── assets/
-│   ├── splash_background.png  # AI-generated title screen art
-│   └── gameover_background.png # AI-generated game-over art
-├── sprites_json/
-│   ├── front_idle32.json      # 32×32 base sprites (JSON pixel data)
-│   ├── right_idle32.json
-│   ├── back_idle32.json
-│   └── all_sprites.json       # All 28 states × frames (generated)
-├── terrain/
-│   ├── heightfield.py         # fBm noise, craters, normals, colorize, shade
-│   └── terrain_renderer.py    # Pre-renders terrain surface + rock props + vignette
-├── entities/
-│   ├── player.py              # Movement, slope collision, sprint
-│   ├── player_sprite.py       # 4-directional animation state machine
-│   ├── enemy_base.py          # Enemy base class + AcidPool + AcidProjectile
-│   ├── enemy_types.py         # Drone, Runner, Brute, Spitter + create_enemy factory
-│   ├── enemy_mods.py          # Elite variants: Gamma, Alpha, Corrupted
-│   ├── xenomorph.py           # Legacy compatibility shim
-│   ├── xenomorph_sprite.py    # EnemySprite controller (all enemy types)
-│   ├── sprite_factory.py      # Sprite loading (JSON → pygame Surface) + enemy sprites
-│   ├── spawner.py             # Wave director with enemy type scaling
-│   ├── projectiles.py         # Hitscan tracers + flamethrower fire zones
-│   ├── pickups.py             # Health/ammo drops with bob animation
-│   └── animation.py           # AnimationStateMachine framework
-├── combat/
-│   ├── weapons.py             # 3 weapons with data-driven stats
-│   ├── particles.py           # Muzzle flash, blood, acid, sparks (additive blending)
-│   └── floating_text.py       # Damage numbers, combo popups, pickup notifications
-├── game/
-│   ├── state_machine.py       # Menu → Briefing → Playing → Extraction → Victory/Gameover
-│   ├── objectives.py          # 4 objective types + extraction beacon
-│   ├── biomes.py              # 4 biomes with palette + hazard modifiers
-│   └── audio.py               # 11 procedural SFX via numpy synthesis
-└── ui/
-    ├── hud.py                 # Full HUD: health, ammo, wave, objective, combo, indicators
-    ├── menus.py               # Title, briefing, pause, gameover screens
-    └── motion_tracker.py      # Aliens-style radar with ping sweep
+main.py              # Game loop and state machine
+config.py            # All tuning constants and colors
+generate_sprites.py  # Builds animation frames from base sprite JSON
+terrain/             # Heightfield generation, rendering, rock props
+entities/            # Player, enemies, pickups, sprites, wave director
+combat/              # Weapons, particles, floating text
+game/                # State machine, objectives, biomes, audio, meta-progression
+ui/                  # HUD, menus, motion tracker
+sprites_json/        # 32x32 pixel art sprites as JSON coordinate data
+assets/              # Splash and game-over background images
 ```
 
 ## License
