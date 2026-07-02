@@ -36,46 +36,71 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -
 .tag { font-size: 10px; padding: 3px 8px; border-radius: 2px; background: #1c2128; color: #9aa6b0; text-transform: uppercase; letter-spacing: 0.5px; }
 .game-card-footer { display: flex; justify-content: space-between; align-items: center; }
 .game-card-price { font-size: 15px; font-weight: 700; color: #ffb454; }
-.game-card-btn { background: transparent; border: 1px solid #2a3441; color: #e8edf2; padding: 8px 18px; border-radius: 2px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.game-card-btn { background: transparent; border: 1px solid #2a3441; color: #e8edf2; padding: 8px 18px; border-radius: 2px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-block; }
 .game-card-btn:hover { background: #c8362f; border-color: #c8362f; color: #fff; }
 .coming-soon { opacity: 0.6; }
 .coming-soon .game-card-img span { font-size: 14px; color: #9aa6b0; -webkit-text-fill-color: #9aa6b0; }
 .badge-soon { position: absolute; top: 12px; right: 12px; background: rgba(0,217,255,0.15); color: #00d9ff; font-size: 10px; padding: 4px 10px; border-radius: 2px; z-index: 2; text-transform: uppercase; letter-spacing: 1px; }
 .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(7,8,11,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.05); padding: 14px 32px; display: flex; align-items: center; justify-content: space-between; }
-.nav-logo { font-size: 16px; font-weight: 800; letter-spacing: -0.5px; }
+.nav-logo { font-size: 16px; font-weight: 800; letter-spacing: -0.5px; cursor: pointer; }
 .nav-logo span { color: #00d9ff; }
 .nav-links { display: flex; gap: 28px; }
 .nav-links a { color: #9aa6b0; text-decoration: none; font-size: 13px; transition: color 0.2s; cursor: pointer; }
 .nav-links a:hover { color: #e8edf2; }
 .footer { text-align: center; padding: 48px 24px; border-top: 1px solid #1c2128; color: #5a6470; font-size: 12px; }
+.footer a { color: #9aa6b0; text-decoration: none; }
+.footer a:hover { color: #e8edf2; }
+
+/* Download modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: center; justify-content: center; }
+.modal-overlay.active { display: flex; }
+.modal { background: #0d1117; border: 1px solid #1c2128; border-radius: 8px; padding: 40px; max-width: 440px; width: 90%; text-align: center; }
+.modal h2 { font-size: 24px; margin-bottom: 8px; }
+.modal p { font-size: 14px; color: #9aa6b0; margin-bottom: 24px; }
+.modal-btns { display: flex; flex-direction: column; gap: 10px; }
+.modal-btn { display: block; padding: 14px; border-radius: 4px; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.2s; cursor: pointer; border: none; }
+.modal-btn-primary { background: #c8362f; color: #fff; }
+.modal-btn-primary:hover { background: #e04540; }
+.modal-btn-secondary { background: #1c2128; color: #e8edf2; border: 1px solid #2a3441; }
+.modal-btn-secondary:hover { border-color: #3a4045; }
+.modal-meta { font-size: 12px; color: #5a6470; margin-top: 16px; }
+.modal-close { position: absolute; top: 16px; right: 20px; font-size: 24px; color: #5a6470; cursor: pointer; background: none; border: none; }
+.modal-close:hover { color: #e8edf2; }
+
+/* Toast notification */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: #0d1117; border: 1px solid #00d9ff; color: #00d9ff; padding: 12px 24px; border-radius: 4px; font-size: 13px; z-index: 300; transition: transform 0.3s; }
+.toast.show { transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
 
 <nav class="nav">
-  <div class="nav-logo">NIGHT<span>DRIVE</span></div>
+  <div class="nav-logo" onclick="scrollTo(0,0)">NIGHT<span>DRIVE</span></div>
   <div class="nav-links">
-    <a>Store</a><a>Library</a><a>Community</a><a>About</a>
+    <a onclick="document.getElementById('games').scrollIntoView({behavior:'smooth'})">Store</a>
+    <a onclick="window.open('https://github.com/FactionRed/xeno-breach','_blank')">GitHub</a>
+    <a onclick="window.open('https://github.com/FactionRed/xeno-breach/releases','_blank')">Releases</a>
+    <a onclick="showToast('About page coming soon')">About</a>
   </div>
 </nav>
 
 <div class="hero">
   <div class="hero-bg"></div>
   <div class="hero-content">
-    <div class="hero-tag">Featured Release</div>
+    <div class="hero-tag" onclick="document.getElementById('games').scrollIntoView({behavior:'smooth'})">Featured Release</div>
     <h1 class="hero-title">XENO BREACH</h1>
     <p class="hero-sub">Survive escalating alien waves on procedurally generated rocky planets. Fight, scavenge, upgrade, extract.</p>
-    <a class="hero-cta">PLAY NOW <span class="price">· Free</span></a>
+    <button class="hero-cta" onclick="openDownload()">PLAY NOW <span class="price">· Free</span></button>
   </div>
 </div>
 
-<div class="games-section">
+<div class="games-section" id="games">
   <div class="section-header">
     <h2 class="section-title">All Games</h2>
-    <a class="section-link">View all →</a>
+    <a class="section-link" onclick="showToast('You\'re already seeing all games!')">View all →</a>
   </div>
   <div class="game-grid">
-    <div class="game-card" onclick="alert('Opening Xeno Breach store page...')">
+    <div class="game-card" onclick="openDownload()">
       <div class="game-card-img"><span>XENO BREACH</span></div>
       <div class="game-card-body">
         <h3 class="game-card-title">Xeno Breach</h3>
@@ -83,7 +108,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -
         <div class="game-card-tags"><span class="tag">Survival</span><span class="tag">Shooter</span><span class="tag">Roguelite</span></div>
         <div class="game-card-footer">
           <span class="game-card-price">Free</span>
-          <button class="game-card-btn" onclick="event.stopPropagation(); alert('Downloading XenoBreach.exe...')">GET</button>
+          <a class="game-card-btn" onclick="event.stopPropagation(); openDownload()">GET</a>
         </div>
       </div>
     </div>
@@ -95,7 +120,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -
         <div class="game-card-tags"><span class="tag">TBA</span></div>
         <div class="game-card-footer">
           <span class="game-card-price" style="color:#5a6470">—</span>
-          <button class="game-card-btn" disabled style="opacity:0.4;cursor:not-allowed">WISHLIST</button>
+          <button class="game-card-btn" onclick="showToast('Wishlisted! We\'ll notify you when it launches.')">WISHLIST</button>
         </div>
       </div>
     </div>
@@ -107,7 +132,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -
         <div class="game-card-tags"><span class="tag">TBA</span></div>
         <div class="game-card-footer">
           <span class="game-card-price" style="color:#5a6470">—</span>
-          <button class="game-card-btn" disabled style="opacity:0.4;cursor:not-allowed">WISHLIST</button>
+          <button class="game-card-btn" onclick="showToast('Wishlisted! We\'ll notify you when it launches.')">WISHLIST</button>
         </div>
       </div>
     </div>
@@ -115,8 +140,45 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -
 </div>
 
 <div class="footer">
-  Nightdrive Games · Built with Python and pygame-ce · MIT License
+  Nightdrive Games · Built with Python and pygame-ce · <a onclick="window.open('https://github.com/FactionRed/xeno-breach','_blank')">GitHub</a> · MIT License
 </div>
+
+<!-- Download modal -->
+<div class="modal-overlay" id="downloadModal" onclick="if(event.target===this) closeDownload()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeDownload()">×</button>
+    <h2>Download Xeno Breach</h2>
+    <p>Free · v1.1.0 · Windows .exe — no install needed</p>
+    <div class="modal-btns">
+      <a class="modal-btn modal-btn-primary" href="https://github.com/FactionRed/xeno-breach/releases/download/v1.1.0/XenoBreach.exe" download>Download .exe (29 MB)</a>
+      <a class="modal-btn modal-btn-secondary" onclick="window.open('https://github.com/FactionRed/xeno-breach','_blank')">View Source on GitHub</a>
+      <a class="modal-btn modal-btn-secondary" onclick="window.open('https://github.com/FactionRed/xeno-breach/releases/tag/v1.1.0','_blank')">View Changelog</a>
+    </div>
+    <p class="modal-meta">Requires Windows 10+ · Or run from source: <code>pip install pygame-ce numpy noise pillow</code></p>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+function openDownload() {
+  document.getElementById('downloadModal').classList.add('active');
+}
+function closeDownload() {
+  document.getElementById('downloadModal').classList.remove('active');
+}
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+// ESC closes modal
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeDownload();
+});
+</script>
 
 </body>
 </html>
