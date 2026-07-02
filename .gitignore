@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Generated screenshots (dev only)
+screenshot_*.png
+screenshot_*.py
+
+# Temporary sprite PNGs (regenerated from JSON)
+sprites_png/
+
+# Save files
+*.save
+*.json.bak
