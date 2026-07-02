@@ -1,6 +1,6 @@
 """Game state machine — manages high-level game flow.
 
-States: MENU → BRIEFING → PLAYING → EXTRACTION → VICTORY / GAMEOVER
+States: MENU → ARMORY → BRIEFING → PLAYING → EXTRACTION → VICTORY / GAMEOVER
 Each state has enter(), update(dt), and exit() semantics.
 """
 from enum import Enum
@@ -8,6 +8,7 @@ from enum import Enum
 
 class GameState(Enum):
     MENU = 'menu'
+    ARMORY = 'armory'
     BRIEFING = 'briefing'
     PLAYING = 'playing'
     EXTRACTION = 'extraction'
@@ -88,3 +89,7 @@ class StateMachine:
     @property
     def is_menu(self):
         return self.current_state == GameState.MENU
+
+    @property
+    def is_armory(self):
+        return self.current_state == GameState.ARMORY

@@ -52,6 +52,8 @@ from game.state_machine import GameState, StateMachine
 from game.objectives import generate_objective, ExtractionBeacon
 from game.biomes import pick_biome
 from game.audio import AudioSystem
+from game.meta_progression import MetaState
+from game.armory import ArmoryScreen
 from ui.hud import HUD
 from ui.menus import MenuRenderer
 
@@ -88,9 +90,14 @@ class Game:
         # Audio
         self.audio = AudioSystem()
 
+        # Meta progression
+        self.meta = MetaState()
+        self.armory = ArmoryScreen()
+
         # Game state machine
         self.sm = StateMachine()
         self.sm.register_handler(GameState.MENU, self._update_menu)
+        self.sm.register_handler(GameState.ARMORY, self._update_armory)
         self.sm.register_handler(GameState.BRIEFING, self._update_briefing)
         self.sm.register_handler(GameState.PLAYING, self._update_playing)
         self.sm.register_handler(GameState.EXTRACTION, self._update_extraction)
@@ -135,6 +142,7 @@ class Game:
         self.kills = 0
         self.combo = 0
         self.combo_timer = 0.0
+        self.run_salvage = 0
         self.shots_fired = 0
         self.shots_hit = 0
         self.waves_completed = 0
@@ -145,7 +153,8 @@ class Game:
 
         # Menu
         self.menu_selected = 0
-        self.menu_options = ["DEPLOY", "QUIT"]
+        self.menu_options = ["DEPLOY", "ARMORY", "QUIT"]
+        self.pause_selected = 0
 
         print("[game] Xeno Breach ready.")
 
@@ -163,6 +172,8 @@ class Game:
                     if event.key == pygame.K_ESCAPE:
                         if self.sm.is_menu:
                             running = False
+                        elif self.sm.is_armory:
+                            self.sm.transition(GameState.MENU)
                         elif self.sm.current_state == GameState.PAUSED:
                             self.sm.transition(GameState.PLAYING)
                         elif self.sm.is_playing or self.sm.is_extraction:
@@ -184,12 +195,37 @@ class Game:
                         elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
                             if self.menu_selected == 0:
                                 self._start_new_run()
+                            elif self.menu_selected == 1:
+                                self.audio.play('ui_click')
+                                self.sm.transition(GameState.ARMORY)
                             else:
                                 running = False
+                    elif self.sm.is_armory:
+                        result = self.armory.handle_input(event.key, self.meta)
+                        self.audio.play('ui_click')
+                        if result == 'deploy':
+                            self._start_new_run()
+                        elif result == 'back':
+                            self.sm.transition(GameState.MENU)
                     elif self.sm.current_state == GameState.BRIEFING:
                         if event.key in (pygame.K_RETURN, pygame.K_SPACE):
                             self.audio.play('ui_click')
                             self.sm.transition(GameState.PLAYING)
+                    elif self.sm.current_state == GameState.PAUSED:
+                        if event.key in (pygame.K_UP, pygame.K_w):
+                            self.pause_selected = (self.pause_selected - 1) % 3
+                            self.audio.play('ui_click')
+                        elif event.key in (pygame.K_DOWN, pygame.K_s):
+                            self.pause_selected = (self.pause_selected + 1) % 3
+                            self.audio.play('ui_click')
+                        elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                            self.audio.play('ui_click')
+                            if self.pause_selected == 0:  # RESUME
+                                self.sm.transition(GameState.PLAYING)
+                            elif self.pause_selected == 1:  # RESTART
+                                self._start_new_run()
+                            else:  # QUIT TO MENU
+                                self.sm.transition(GameState.MENU)
                     elif self.sm.is_playing or self.sm.is_extraction:
                         if event.key == pygame.K_r:
                             if self.weapons.current.start_reload():
@@ -201,7 +237,7 @@ class Game:
                     elif self.sm.is_gameover:
                         if event.key == pygame.K_RETURN:
                             self.audio.play('ui_click')
-                            self.sm.transition(GameState.MENU)
+                            self.sm.transition(GameState.ARMORY)
 
             self.menus.update(raw_dt)
             self.sm.update(dt, self)
@@ -220,6 +256,9 @@ class Game:
     def _update_menu(self, dt, game):
         pass
 
+    def _update_armory(self, dt, game):
+        self.armory.update(dt)
+
     def _update_briefing(self, dt, game):
         pass
 
@@ -229,6 +268,11 @@ class Game:
     def _update_extraction(self, dt, game):
         self._update_gameplay(dt)
         if self.extraction_beacon and self.extraction_beacon.complete:
+            # Extraction bonus salvage
+            bonus = 10 + self.wave_director.wave_number * 2
+            self.meta.add_salvage(bonus)
+            self.run_salvage += bonus
+            self.meta.record_run_end(self.kills, self.wave_director.wave_number, True)
             self.sm.transition(GameState.VICTORY)
 
     def _update_gameover(self, dt, game):
@@ -248,15 +292,28 @@ class Game:
         self.particles = ParticleSystem()
         self.projectiles = ProjectileSystem()
         self.acid_pools = []
-        self.acid_projectiles = []  # spitter acid projectiles
+        self.acid_projectiles = []
         self.xeno_sprites = {}
         self.wave_director = WaveDirector(self.terrain)
         self.extraction_beacon = None
         self.kills = 0
         self.combo = 0
         self.combo_timer = 0.0
+        self.run_salvage = 0
         self.shots_fired = 0
         self.shots_hit = 0
+
+        # Apply meta upgrades
+        self.player.max_health = 100 + self.meta.bonus_health
+        self.player.health = self.player.max_health
+        self.player.speed *= self.meta.speed_mult
+        # Apply weapon upgrades
+        from combat.weapons import WEAPON_STATS, WEAPON_ORDER
+        for wname in WEAPON_ORDER:
+            w = self.weapons.weapons[wname]
+            w.mag_size = int(WEAPON_STATS[wname]['mag_size'] * self.meta.ammo_mult)
+            w.ammo = w.mag_size
+            w.fire_rate = int(WEAPON_STATS[wname]['fire_rate'] / self.meta.fire_rate_mult)
         self.waves_completed = 0
         self.shake_amount = 0
         self.kill_flash = 0
@@ -355,6 +412,14 @@ class Game:
                 self.combo += 1
                 self.combo_timer = 3.0
                 self.audio.play('xeno_death', volume=0.4)
+                # Earn salvage
+                salvage = self.meta.salvage_per_kill
+                if getattr(e, 'enemy_type', 'drone') == 'brute':
+                    salvage += 2
+                if getattr(e, 'elite', None):
+                    salvage += 2
+                self.meta.add_salvage(salvage)
+                self.run_salvage += salvage
                 # Floating damage number on kill
                 self.floating_texts.add_damage(e.x, e.y, 999, crit=True)
                 # Combo popup
@@ -367,14 +432,20 @@ class Game:
         for pool in self.acid_pools:
             pool.update(dt)
             if pool.contains(self.player.x, self.player.y):
-                self.player.health -= pool.dps * dt
+                acid_dmg = pool.dps * dt * (1.0 - self.meta.acid_resist)
+                self.player.health -= acid_dmg
         self.acid_pools = [p for p in self.acid_pools if p.life > 0]
+
+        # HP regen (from Auto-Injector upgrade)
+        if self.meta.regen_rate > 0 and self.player.health > 0:
+            self.player.health = min(self.player.max_health,
+                                     self.player.health + self.meta.regen_rate * dt)
 
         # Acid projectiles (from spitters)
         for proj in self.acid_projectiles:
             proj.update(dt)
             if proj.contains(self.player.x, self.player.y):
-                self.player.health -= proj.damage
+                self.player.health -= proj.damage * (1.0 - self.meta.acid_resist)
                 self.acid_pools.append(AcidPool(proj.x, proj.y, radius=20, dps=5, life=3.0))
                 proj.dead = True
         self.acid_projectiles = [p for p in self.acid_projectiles if not p.dead]
@@ -426,6 +497,7 @@ class Game:
         # Game over
         if self.player.health <= 0:
             self.player.health = 0
+            self.meta.record_run_end(self.kills, self.wave_director.wave_number, False)
             self.sm.transition(GameState.GAMEOVER)
 
     def _start_extraction(self):
@@ -538,18 +610,22 @@ class Game:
         if self.sm.is_menu:
             self.menus.draw_title(self.screen, self.big_font, self.med_font,
                                   self.font, self.menu_selected, self.menu_options)
+        elif self.sm.is_armory:
+            self.armory.draw(self.screen, self.meta, self.font, self.big_font, self.small_font)
         elif self.sm.current_state == GameState.BRIEFING:
             self.menus.draw_briefing(self.screen, self.big_font, self.med_font,
                                      self.font, self.run_seed, self.biome, self.objective)
         elif self.sm.is_playing or self.sm.is_extraction or self.sm.is_gameover or self.sm.current_state == GameState.PAUSED:
             self._render_gameplay()
             if self.sm.current_state == GameState.PAUSED:
-                self.menus.draw_paused(self.screen, self.big_font, self.font)
+                self.menus.draw_paused(self.screen, self.big_font, self.font, self.pause_selected)
             elif self.sm.is_gameover:
                 stats = [
                     f"WAVES SURVIVED: {self.waves_completed}",
                     f"XENOMORPHS KILLED: {self.kills}",
                     f"ACCURACY: {self._accuracy():.0f}%",
+                    f"SALVAGE EARNED: {self.run_salvage}",
+                    f"TOTAL SALVAGE: {self.meta.salvage}",
                 ]
                 self.menus.draw_gameover(self.screen, self.big_font, self.med_font,
                                          self.font, self.sm.current_state == GameState.VICTORY, stats)

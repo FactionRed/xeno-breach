@@ -269,8 +269,15 @@ class Enemy:
         self.flash_timer = max(0, self.flash_timer - dt)
         self.attack_cooldown = max(0, self.attack_cooldown - dt)
 
-        self._current_state.update(dt, self, player, terrain, enemies)
-        self._check_transitions(dt, player, terrain, enemies)
+        if self._current_state is not None:
+            self._current_state.update(dt, self, player, terrain, enemies)
+            self._check_transitions(dt, player, terrain, enemies)
+        else:
+            # State was never set (e.g. Runner starts with 'chase' but base
+            # init set 'patrol' which doesn't exist) — fall back to first state
+            if self._states:
+                first_state = next(iter(self._states))
+                self._transition(first_state)
 
         self.x = max(self.radius, min(WORLD_W - self.radius, self.x))
         self.y = max(self.radius, min(WORLD_H - self.radius, self.y))

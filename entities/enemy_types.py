@@ -190,7 +190,11 @@ class Runner(Enemy):
         self.lunge_range = 100
         self.detect_range = 600  # always detects
         self.attack_damage = 8
-        self.state = 'chase'  # start chasing immediately
+        # Override initial state to chase (was 'patrol' from base init)
+        self.state = 'chase'
+        self._current_state = self._states.get('chase')
+        if self._current_state:
+            self._current_state.enter(self, None, None)
 
     def _setup_states(self):
         self._states = {
