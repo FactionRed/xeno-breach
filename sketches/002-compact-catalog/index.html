@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nightdrive — Game Catalog</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; background: #f5f6f8; color: #1a1a1a; line-height: 1.5; }
+.header { background: #fff; border-bottom: 1px solid #e0e3e8; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.header-logo { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+.header-logo span { color: #c8362f; }
+.header-search { flex: 1; max-width: 400px; margin: 0 32px; }
+.header-search input { width: 100%; padding: 8px 14px; border: 1px solid #d0d4da; border-radius: 4px; font-size: 13px; background: #f5f6f8; transition: all 0.2s; }
+.header-search input:focus { outline: none; border-color: #c8362f; background: #fff; }
+.header-nav { display: flex; gap: 20px; }
+.header-nav a { color: #5a6470; text-decoration: none; font-size: 13px; font-weight: 500; cursor: pointer; transition: color 0.2s; }
+.header-nav a:hover { color: #1a1a1a; }
+.layout { display: flex; max-width: 1400px; margin: 0 auto; }
+.sidebar { width: 200px; border-right: 1px solid #e0e3e8; padding: 24px 16px; flex-shrink: 0; }
+.sidebar h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #9aa6b0; margin-bottom: 10px; }
+.sidebar-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 4px; font-size: 13px; color: #5a6470; cursor: pointer; transition: all 0.15s; margin-bottom: 2px; }
+.sidebar-item:hover { background: #eee; color: #1a1a1a; }
+.sidebar-item.active { background: #1a1e2a; color: #fff; }
+.sidebar-count { margin-left: auto; font-size: 11px; color: #9aa6b0; }
+.sidebar-item.active .sidebar-count { color: #8899aa; }
+.main { flex: 1; padding: 24px; }
+.breadcrumb { font-size: 12px; color: #9aa6b0; margin-bottom: 16px; }
+.breadcrumb span { color: #1a1a1a; }
+.sort-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.sort-bar h1 { font-size: 22px; font-weight: 700; }
+.sort-options { display: flex; gap: 6px; }
+.sort-btn { padding: 6px 12px; border: 1px solid #d0d4da; border-radius: 4px; background: #fff; font-size: 12px; cursor: pointer; transition: all 0.15s; color: #5a6470; }
+.sort-btn:hover { border-color: #9aa6b0; }
+.sort-btn.active { background: #1a1e2a; color: #fff; border-color: #1a1e2a; }
+.catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.catalog-card { background: #fff; border: 1px solid #e0e3e8; border-radius: 6px; overflow: hidden; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; }
+.catalog-card:hover { border-color: #b0b6be; box-shadow: 0 4px 12px rgba(0,0,0,0.06); transform: translateY(-1px); }
+.catalog-thumb { height: 130px; background: linear-gradient(135deg, #1a1e2a, #0a1a1a); display: flex; align-items: center; justify-content: center; position: relative; }
+.catalog-thumb span { font-size: 22px; font-weight: 800; letter-spacing: -1px; color: #3a4045; }
+.catalog-thumb.free::after { content: 'FREE'; position: absolute; top: 8px; left: 8px; background: #00aa55; color: #fff; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 2px; }
+.catalog-thumb.soon::after { content: 'SOON'; position: absolute; top: 8px; left: 8px; background: #c8362f; color: #fff; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 2px; }
+.catalog-info { padding: 12px 14px; flex: 1; display: flex; flex-direction: column; }
+.catalog-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.catalog-desc { font-size: 12px; color: #5a6470; margin-bottom: 8px; line-height: 1.4; flex: 1; }
+.catalog-meta { display: flex; justify-content: space-between; align-items: center; }
+.catalog-tags { display: flex; gap: 4px; }
+.catalog-tag { font-size: 10px; color: #5a6470; background: #f0f1f4; padding: 2px 6px; border-radius: 2px; }
+.catalog-price { font-size: 13px; font-weight: 700; }
+.catalog-price.free { color: #00aa55; }
+.catalog-price.tba { color: #9aa6b0; font-weight: 400; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">NIGHT<span>DRIVE</span></div>
+  <div class="header-search"><input placeholder="Search games..." oninput="filterGames(this.value)"></div>
+  <div class="header-nav">
+    <a>Store</a><a>Library</a><a>Developer</a>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <h3>Browse</h3>
+    <div class="sidebar-item active" onclick="filterCategory(this,'all')">All Games <span class="sidebar-count">3</span></div>
+    <div class="sidebar-item" onclick="filterCategory(this,'action')">Action <span class="sidebar-count">1</span></div>
+    <div class="sidebar-item" onclick="filterCategory(this,'survival')">Survival <span class="sidebar-count">1</span></div>
+    <div class="sidebar-item" onclick="filterCategory(this,'coming')">Coming Soon <span class="sidebar-count">2</span></div>
+    <h3 style="margin-top:24px">Price</h3>
+    <div class="sidebar-item" onclick="filterCategory(this,'free')">Free <span class="sidebar-count">1</span></div>
+    <div class="sidebar-item" onclick="filterCategory(this,'paid')">Paid <span class="sidebar-count">0</span></div>
+  </div>
+  <div class="main">
+    <div class="breadcrumb">Store <span>› All Games</span></div>
+    <div class="sort-bar">
+      <h1>All Games</h1>
+      <div class="sort-options">
+        <button class="sort-btn active" onclick="sortGames(this,'new')">Newest</button>
+        <button class="sort-btn" onclick="sortGames(this,'name')">A-Z</button>
+        <button class="sort-btn" onclick="sortGames(this,'price')">Price</button>
+      </div>
+    </div>
+    <div class="catalog" id="catalog">
+      <div class="catalog-card" data-name="xeno breach" data-cat="action survival" data-price="0" onclick="alert('Opening Xeno Breach...')">
+        <div class="catalog-thumb free"><span>XENO BREACH</span></div>
+        <div class="catalog-info">
+          <div class="catalog-title">Xeno Breach</div>
+          <div class="catalog-desc">Top-down survival shooter on procedural planets. 4 enemy types, meta-upgrades, wave director.</div>
+          <div class="catalog-meta">
+            <div class="catalog-tags"><span class="catalog-tag">Survival</span><span class="catalog-tag">Shooter</span></div>
+            <span class="catalog-price free">Free</span>
+          </div>
+        </div>
+      </div>
+      <div class="catalog-card" data-name="untitled project 2" data-cat="coming" data-price="-1">
+        <div class="catalog-thumb soon"><span>TBA</span></div>
+        <div class="catalog-info">
+          <div class="catalog-title">Untitled Project</div>
+          <div class="catalog-desc">Your next game. Duplicate this card when you're ready to ship.</div>
+          <div class="catalog-meta">
+            <div class="catalog-tags"><span class="catalog-tag">TBA</span></div>
+            <span class="catalog-price tba">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="catalog-card" data-name="untitled project 3" data-cat="coming" data-price="-1">
+        <div class="catalog-thumb soon"><span>TBA</span></div>
+        <div class="catalog-info">
+          <div class="catalog-title">Untitled Project</div>
+          <div class="catalog-desc">Placeholder for future titles. Same card structure, just swap in your art.</div>
+          <div class="catalog-meta">
+            <div class="catalog-tags"><span class="catalog-tag">TBA</span></div>
+            <span class="catalog-price tba">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function filterGames(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('.catalog-card').forEach(c => {
+    c.style.display = c.dataset.name.includes(q) ? '' : 'none';
+  });
+}
+function filterCategory(el, cat) {
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.catalog-card').forEach(c => {
+    if (cat === 'all') c.style.display = '';
+    else if (cat === 'free') c.style.display = c.dataset.price === '0' ? '' : 'none';
+    else if (cat === 'coming') c.style.display = c.dataset.cat.includes('coming') ? '' : 'none';
+    else c.style.display = c.dataset.cat.includes(cat) ? '' : 'none';
+  });
+}
+function sortGames(el, mode) {
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  const grid = document.getElementById('catalog');
+  const cards = Array.from(grid.children);
+  if (mode === 'name') cards.sort((a,b) => a.dataset.name.localeCompare(b.dataset.name));
+  else if (mode === 'price') cards.sort((a,b) => parseInt(a.dataset.price) - parseInt(b.dataset.price));
+  cards.forEach(c => grid.appendChild(c));
+}
+</script>
+
+</body>
+</html>

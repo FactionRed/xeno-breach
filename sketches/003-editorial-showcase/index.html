@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nightdrive</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Georgia, "Times New Roman", serif; -webkit-font-smoothing: antialiased; background: #faf8f5; color: #2a2a2a; line-height: 1.7; }
+.nav { max-width: 900px; margin: 0 auto; padding: 28px 24px; display: flex; justify-content: space-between; align-items: center; }
+.nav-brand { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+.nav-brand span { color: #c8362f; }
+.nav-links { display: flex; gap: 24px; }
+.nav-links a { font-family: -apple-system, sans-serif; font-size: 13px; color: #6a6a6a; text-decoration: none; cursor: pointer; transition: color 0.2s; }
+.nav-links a:hover { color: #c8362f; }
+.hero { max-width: 900px; margin: 0 auto; padding: 40px 24px 60px; text-align: center; }
+.hero-eyebrow { font-family: -apple-system, sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #c8362f; margin-bottom: 16px; }
+.hero-title { font-size: 56px; font-weight: 700; line-height: 1.1; letter-spacing: -1px; margin-bottom: 20px; }
+.hero-desc { font-size: 19px; color: #5a5a5a; max-width: 620px; margin: 0 auto 36px; }
+.hero-actions { display: flex; gap: 12px; justify-content: center; }
+.btn-primary { font-family: -apple-system, sans-serif; background: #c8362f; color: #fff; padding: 12px 32px; border: none; border-radius: 2px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-block; }
+.btn-primary:hover { background: #a02820; }
+.btn-secondary { font-family: -apple-system, sans-serif; background: transparent; color: #2a2a2a; padding: 12px 28px; border: 1px solid #ccc; border-radius: 2px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-block; }
+.btn-secondary:hover { border-color: #2a2a2a; }
+.divider { max-width: 900px; margin: 0 auto; height: 1px; background: #e0ddd8; }
+.games { max-width: 900px; margin: 0 auto; padding: 60px 24px; }
+.games-header { margin-bottom: 40px; }
+.games-header h2 { font-size: 32px; margin-bottom: 8px; }
+.games-header p { font-size: 15px; color: #6a6a6a; }
+.game-feature { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; margin-bottom: 72px; }
+.game-feature:nth-child(even) .game-feature-text { order: 2; }
+.game-feature-art { height: 280px; background: linear-gradient(135deg, #1a1e2a, #0a1a1a); border-radius: 4px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.game-feature-art::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 40%, rgba(0,217,255,0.08), transparent 60%); }
+.game-feature-art span { font-size: 36px; font-weight: 800; letter-spacing: -1px; color: #3a4045; z-index: 1; font-family: -apple-system, sans-serif; }
+.game-feature-art .badge { position: absolute; top: 16px; right: 16px; font-family: -apple-system, sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding: 4px 10px; border-radius: 2px; }
+.badge-live { background: rgba(0,170,85,0.15); color: #00aa55; }
+.badge-soon { background: rgba(200,54,47,0.15); color: #c8362f; }
+.game-feature-text h3 { font-size: 28px; margin-bottom: 12px; }
+.game-feature-text p { font-size: 16px; color: #5a5a5a; margin-bottom: 20px; }
+.game-feature-meta { display: flex; gap: 16px; margin-bottom: 24px; }
+.meta-item { font-family: -apple-system, sans-serif; font-size: 12px; color: #6a6a6a; }
+.meta-item strong { display: block; font-size: 14px; color: #2a2a2a; }
+.game-feature-actions { display: flex; gap: 10px; }
+.footer { text-align: center; padding: 48px 24px; border-top: 1px solid #e0ddd8; }
+.footer p { font-family: -apple-system, sans-serif; font-size: 12px; color: #9a9a9a; }
+@media (max-width: 700px) { .game-feature { grid-template-columns: 1fr; gap: 24px; } .game-feature:nth-child(even) .game-feature-text { order: 0; } .hero-title { font-size: 40px; } }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="nav-brand">Night<span>drive</span></div>
+  <div class="nav-links">
+    <a>Games</a><a>About</a><a>Blog</a><a>Contact</a>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="hero-eyebrow">Independent Game Studio</div>
+  <h1 class="hero-title">Small games, big worlds.</h1>
+  <p class="hero-desc">We make procedural survival shooters and experimental games. Everything is free, open source, and built from scratch.</p>
+  <div class="hero-actions">
+    <a class="btn-primary" onclick="document.getElementById('games').scrollIntoView({behavior:'smooth'})">Browse Games</a>
+    <a class="btn-secondary" onclick="window.open('https://github.com/FactionRed/xeno-breach','_blank')">GitHub</a>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="games" id="games">
+  <div class="games-header">
+    <h2>Our Games</h2>
+    <p>Download and play — no installers, no accounts, no DRM.</p>
+  </div>
+
+  <div class="game-feature">
+    <div class="game-feature-text">
+      <h3>Xeno Breach</h3>
+      <p>A top-down survival shooter where you fight escalating waves of alien creatures on procedurally generated rocky planets. Four enemy types, eight meta-upgrades, four biomes.</p>
+      <div class="game-feature-meta">
+        <div class="meta-item"><strong>Free</strong>Open Source</div>
+        <div class="meta-item"><strong>v1.1.0</strong>Latest Release</div>
+        <div class="meta-item"><strong>Windows</strong>.exe available</div>
+      </div>
+      <div class="game-feature-actions">
+        <a class="btn-primary" onclick="alert('Downloading XenoBreach.exe...')">Download</a>
+        <a class="btn-secondary" onclick="window.open('https://github.com/FactionRed/xeno-breach','_blank')">Source</a>
+      </div>
+    </div>
+    <div class="game-feature-art">
+      <span>XENO BREACH</span>
+      <div class="badge badge-live">Available</div>
+    </div>
+  </div>
+
+  <div class="game-feature">
+    <div class="game-feature-art">
+      <span>TBA</span>
+      <div class="badge badge-soon">In Dev</div>
+    </div>
+    <div class="game-feature-text">
+      <h3>Untitled Project</h3>
+      <p>Your next game goes here. Same alternating layout — just swap in your art, description, and download link when it's ready.</p>
+      <div class="game-feature-meta">
+        <div class="meta-item"><strong>TBA</strong>Price</div>
+        <div class="meta-item"><strong>—</strong>Version</div>
+      </div>
+      <div class="game-feature-actions">
+        <a class="btn-secondary" onclick="alert('Wishlisted!')">Wishlist</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <p>Nightdrive Games · Built with Python and pygame-ce · MIT License</p>
+</div>
+
+</body>
+</html>

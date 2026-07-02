@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nightdrive Games</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; background: #07080b; color: #e8edf2; line-height: 1.5; overflow-x: hidden; }
+.hero { position: relative; height: 80vh; min-height: 520px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, #0a0e12 0%, #1a1e2a 40%, #0a1a1a 100%); }
+.hero-bg::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 70% 40%, rgba(0,217,255,0.08), transparent 50%), radial-gradient(ellipse at 30% 70%, rgba(255,107,0,0.06), transparent 50%); }
+.hero-content { position: relative; z-index: 2; text-align: center; max-width: 720px; padding: 0 24px; }
+.hero-tag { display: inline-block; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #00d9ff; border: 1px solid rgba(0,217,255,0.3); padding: 6px 16px; border-radius: 2px; margin-bottom: 24px; transition: all 0.3s; cursor: pointer; }
+.hero-tag:hover { background: rgba(0,217,255,0.1); border-color: #00d9ff; }
+.hero-title { font-size: 64px; font-weight: 800; letter-spacing: -2px; line-height: 1; margin-bottom: 16px; background: linear-gradient(180deg, #fff, #8899aa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.hero-sub { font-size: 18px; color: #9aa6b0; margin-bottom: 32px; }
+.hero-cta { display: inline-flex; align-items: center; gap: 8px; background: #c8362f; color: #fff; padding: 14px 36px; border-radius: 2px; font-size: 15px; font-weight: 600; text-decoration: none; transition: all 0.2s; border: none; cursor: pointer; }
+.hero-cta:hover { background: #e04540; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(200,54,47,0.3); }
+.hero-cta .price { font-size: 13px; opacity: 0.7; font-weight: 400; }
+.games-section { max-width: 1200px; margin: 0 auto; padding: 80px 24px; }
+.section-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 40px; }
+.section-title { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+.section-link { font-size: 13px; color: #9aa6b0; text-decoration: none; transition: color 0.2s; cursor: pointer; }
+.section-link:hover { color: #00d9ff; }
+.game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; }
+.game-card { background: #0d1117; border: 1px solid #1c2128; border-radius: 6px; overflow: hidden; transition: all 0.3s; cursor: pointer; }
+.game-card:hover { border-color: #2a3441; transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,0,0,0.4); }
+.game-card-img { height: 200px; background: linear-gradient(135deg, #1a1e2a, #0a1a1a); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.game-card-img::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 40%, rgba(0,217,255,0.1), transparent 60%); }
+.game-card-img span { font-size: 48px; font-weight: 800; letter-spacing: -2px; background: linear-gradient(135deg, #3a4045, #1c2128); -webkit-background-clip: text; -webkit-text-fill-color: transparent; z-index: 1; }
+.game-card-body { padding: 20px; }
+.game-card-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+.game-card-desc { font-size: 13px; color: #9aa6b0; margin-bottom: 14px; line-height: 1.5; }
+.game-card-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.tag { font-size: 10px; padding: 3px 8px; border-radius: 2px; background: #1c2128; color: #9aa6b0; text-transform: uppercase; letter-spacing: 0.5px; }
+.game-card-footer { display: flex; justify-content: space-between; align-items: center; }
+.game-card-price { font-size: 15px; font-weight: 700; color: #ffb454; }
+.game-card-btn { background: transparent; border: 1px solid #2a3441; color: #e8edf2; padding: 8px 18px; border-radius: 2px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.game-card-btn:hover { background: #c8362f; border-color: #c8362f; color: #fff; }
+.coming-soon { opacity: 0.6; }
+.coming-soon .game-card-img span { font-size: 14px; color: #9aa6b0; -webkit-text-fill-color: #9aa6b0; }
+.badge-soon { position: absolute; top: 12px; right: 12px; background: rgba(0,217,255,0.15); color: #00d9ff; font-size: 10px; padding: 4px 10px; border-radius: 2px; z-index: 2; text-transform: uppercase; letter-spacing: 1px; }
+.nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(7,8,11,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.05); padding: 14px 32px; display: flex; align-items: center; justify-content: space-between; }
+.nav-logo { font-size: 16px; font-weight: 800; letter-spacing: -0.5px; }
+.nav-logo span { color: #00d9ff; }
+.nav-links { display: flex; gap: 28px; }
+.nav-links a { color: #9aa6b0; text-decoration: none; font-size: 13px; transition: color 0.2s; cursor: pointer; }
+.nav-links a:hover { color: #e8edf2; }
+.footer { text-align: center; padding: 48px 24px; border-top: 1px solid #1c2128; color: #5a6470; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">NIGHT<span>DRIVE</span></div>
+  <div class="nav-links">
+    <a>Store</a><a>Library</a><a>Community</a><a>About</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <div class="hero-tag">Featured Release</div>
+    <h1 class="hero-title">XENO BREACH</h1>
+    <p class="hero-sub">Survive escalating alien waves on procedurally generated rocky planets. Fight, scavenge, upgrade, extract.</p>
+    <a class="hero-cta">PLAY NOW <span class="price">· Free</span></a>
+  </div>
+</div>
+
+<div class="games-section">
+  <div class="section-header">
+    <h2 class="section-title">All Games</h2>
+    <a class="section-link">View all →</a>
+  </div>
+  <div class="game-grid">
+    <div class="game-card" onclick="alert('Opening Xeno Breach store page...')">
+      <div class="game-card-img"><span>XENO BREACH</span></div>
+      <div class="game-card-body">
+        <h3 class="game-card-title">Xeno Breach</h3>
+        <p class="game-card-desc">Top-down survival shooter with 4 enemy types, 8 meta-upgrades, and procedural planets.</p>
+        <div class="game-card-tags"><span class="tag">Survival</span><span class="tag">Shooter</span><span class="tag">Roguelite</span></div>
+        <div class="game-card-footer">
+          <span class="game-card-price">Free</span>
+          <button class="game-card-btn" onclick="event.stopPropagation(); alert('Downloading XenoBreach.exe...')">GET</button>
+        </div>
+      </div>
+    </div>
+    <div class="game-card coming-soon">
+      <div class="game-card-img"><span>COMING SOON</span><div class="badge-soon">In Dev</div></div>
+      <div class="game-card-body">
+        <h3 class="game-card-title">Untitled Project</h3>
+        <p class="game-card-desc">Your next game goes here. Same card style, same store integration.</p>
+        <div class="game-card-tags"><span class="tag">TBA</span></div>
+        <div class="game-card-footer">
+          <span class="game-card-price" style="color:#5a6470">—</span>
+          <button class="game-card-btn" disabled style="opacity:0.4;cursor:not-allowed">WISHLIST</button>
+        </div>
+      </div>
+    </div>
+    <div class="game-card coming-soon">
+      <div class="game-card-img"><span>COMING SOON</span><div class="badge-soon">In Dev</div></div>
+      <div class="game-card-body">
+        <h3 class="game-card-title">Untitled Project</h3>
+        <p class="game-card-desc">Placeholder for future titles. Just duplicate this card when you ship something new.</p>
+        <div class="game-card-tags"><span class="tag">TBA</span></div>
+        <div class="game-card-footer">
+          <span class="game-card-price" style="color:#5a6470">—</span>
+          <button class="game-card-btn" disabled style="opacity:0.4;cursor:not-allowed">WISHLIST</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  Nightdrive Games · Built with Python and pygame-ce · MIT License
+</div>
+
+</body>
+</html>
