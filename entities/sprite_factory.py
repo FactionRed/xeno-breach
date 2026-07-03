@@ -73,7 +73,8 @@ def _grid_to_surface(grid):
             color = _C.get(ch)
             if color is not None:
                 surf.set_at((x, y), color)
-    return pygame.transform.scale(surf, (w * SCALE, h * SCALE))
+    scaled = pygame.transform.scale(surf, (w * SCALE, h * SCALE))
+    return scaled.convert_alpha()
 
 
 def _mirror(grid):
@@ -623,7 +624,8 @@ def _json_to_surface(frame_data):
         scaled_w, scaled_h = int(w * 1.5), int(h * 1.5)
     else:
         scaled_w, scaled_h = w * SCALE, h * SCALE
-    return pygame.transform.scale(surf, (scaled_w, scaled_h))
+    scaled = pygame.transform.scale(surf, (scaled_w, scaled_h))
+    return scaled.convert_alpha()
 
 
 # ============ XENOMORPH SPRITES (refined) ============
