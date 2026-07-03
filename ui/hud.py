@@ -13,6 +13,7 @@ Components:
   - Sprint indicator
 """
 import math
+import time
 import pygame
 
 from config import (SCREEN_WIDTH, SCREEN_HEIGHT,
@@ -131,37 +132,102 @@ class HUD:
             screen.blit(font.render("[ SPRINT ]", True, WARNING), (hx + bar_w + 80, hy - 2))
 
     def _draw_weapon_hud(self, screen, font, med_font, weapons):
-        wx = SCREEN_WIDTH - 24; wy = SCREEN_HEIGHT - 44
+        """Draw weapon panel bottom-right with clear weapon name, ammo bar, and slots."""
+        panel_w = 260
+        panel_h = 80
+        px = SCREEN_WIDTH - panel_w - 16
+        py = SCREEN_HEIGHT - panel_h - 16
         weapon = weapons.current
-        # Name
-        name_text = med_font.render(weapon.name.upper().replace('_', ' '), True, ON_PRIMARY)
-        screen.blit(name_text, name_text.get_rect(bottomright=(wx, wy - 8)))
-        # Ammo
+
+        # Panel background (beveled)
+        pygame.draw.rect(screen, (10, 14, 18), (px - 4, py - 4, panel_w + 8, panel_h + 8))
+        pygame.draw.rect(screen, CONSOLE, (px, py, panel_w, panel_h))
+        pygame.draw.rect(screen, (18, 22, 28), (px + 2, py + 2, panel_w - 4, panel_h - 4))
+        # Border
+        pygame.draw.rect(screen, ADRENALINE, (px, py, panel_w, panel_h), 2)
+
+        # Weapon name (large, clear)
+        display_name = weapon.name.upper().replace('_', ' ')
+        name_col = ON_PRIMARY
+        name_text = med_font.render(display_name, True, name_col)
+        screen.blit(name_text, (px + 12, py + 6))
+
+        # Weapon icon (colored square representing the weapon)
+        icon_colors = {'pulse_rifle': (255, 180, 84), 'shotgun': DANGER, 'flamethrower': (255, 107, 0)}
+        icon_col = icon_colors.get(weapon.name, ON_SECONDARY)
+        icon_x = px + panel_w - 30
+        icon_y = py + 8
+        pygame.draw.rect(screen, icon_col, (icon_x, icon_y, 16, 16))
+        pygame.draw.rect(screen, ON_PRIMARY, (icon_x, icon_y, 16, 16), 1)
+
+        # Ammo display
+        ammo_y = py + 34
         if weapon.reloading:
-            ammo_text = font.render("[ RELOADING ]", True, WARNING)
-        else:
-            col = DANGER if weapon.ammo == 0 else ON_PRIMARY
-            ammo_text = med_font.render(f"{weapon.ammo} / {weapon.mag_size}", True, col)
-        screen.blit(ammo_text, ammo_text.get_rect(bottomright=(wx, wy + 18)))
-        # Reload progress bar
-        if weapon.reloading:
-            import time
+            # Reloading state
+            reload_text = font.render("RELOADING", True, WARNING)
+            screen.blit(reload_text, (px + 12, ammo_y))
+            # Reload progress bar
             elapsed = time.monotonic() - weapon.reload_start
             pct = min(1.0, elapsed / weapon.reload_time)
-            bar_w = 80; bar_h = 3
-            bx = wx - bar_w
-            by = wy + 22
-            pygame.draw.rect(screen, CONSOLE, (bx, by, bar_w, bar_h))
+            bar_w = panel_w - 24
+            bar_h = 6
+            bx = px + 12
+            by = ammo_y + 20
+            pygame.draw.rect(screen, (30, 34, 38), (bx, by, bar_w, bar_h))
             pygame.draw.rect(screen, WARNING, (bx, by, int(bar_w * pct), bar_h))
-        # Slots
-        slot_y = SCREEN_HEIGHT - 74
+            pygame.draw.rect(screen, ON_SECONDARY, (bx, by, bar_w, bar_h), 1)
+            pct_text = font.render(f"{pct*100:.0f}%", True, WARNING)
+            screen.blit(pct_text, (bx + bar_w + 4, by - 3))
+        else:
+            # Ammo count + bar
+            ammo_col = DANGER if weapon.ammo == 0 else (WARNING if weapon.ammo <= weapon.mag_size * 0.25 else ON_PRIMARY)
+            ammo_text = med_font.render(f"{weapon.ammo}", True, ammo_col)
+            slash_text = font.render(f" / {weapon.mag_size}", True, ON_SECONDARY)
+            screen.blit(ammo_text, (px + 12, ammo_y))
+            screen.blit(slash_text, (px + 12 + ammo_text.get_width(), ammo_y + 4))
+
+            # Ammo bar (visual representation of mag capacity)
+            bar_w = panel_w - 80
+            bar_h = 6
+            bx = px + 70
+            by = ammo_y + 8
+            pygame.draw.rect(screen, (30, 34, 38), (bx, by, bar_w, bar_h))
+            fill_w = int(bar_w * weapon.ammo / weapon.mag_size) if weapon.mag_size > 0 else 0
+            if fill_w > 0:
+                pygame.draw.rect(screen, ammo_col, (bx, by, fill_w, bar_h))
+            pygame.draw.rect(screen, ON_SECONDARY, (bx, by, bar_w, bar_h), 1)
+
+            # "AMMO" label
+            label = font.render("AMMO", True, ON_SECONDARY)
+            screen.blit(label, (px + 12, ammo_y + 22))
+
+        # Weapon slots (1-2-3 at bottom of panel)
+        slot_y = py + panel_h - 18
+        slot_w = (panel_w - 24) // 3
         for i, wname in enumerate(WEAPON_ORDER):
-            slot_x = SCREEN_WIDTH - 120 + i * 35
+            sx = px + 12 + i * slot_w
             is_current = (i == weapons.current_idx)
-            col = ADRENALINE if is_current else ON_SECONDARY
-            screen.blit(font.render(f"{i+1}", True, col), (slot_x, slot_y))
-            short = wname.split('_')[0][:4].upper()
-            screen.blit(font.render(short, True, col), (slot_x + 12, slot_y))
+            w = weapons.weapons[wname]
+
+            # Slot background
+            if is_current:
+                pygame.draw.rect(screen, (40, 44, 50), (sx, slot_y - 2, slot_w - 4, 16))
+                pygame.draw.rect(screen, ADRENALINE, (sx, slot_y - 2, slot_w - 4, 16), 1)
+            else:
+                pygame.draw.rect(screen, (20, 24, 28), (sx, slot_y - 2, slot_w - 4, 16))
+
+            # Slot number + short name
+            slot_col = ADRENALINE if is_current else ON_SECONDARY
+            short_name = {'pulse_rifle': 'RIFLE', 'shotgun': 'SHOT', 'flamethrower': 'FLAME'}.get(wname, wname[:4].upper())
+            slot_text = font.render(f"{i+1} {short_name}", True, slot_col)
+            screen.blit(slot_text, (sx + 4, slot_y))
+
+            # Mini ammo indicator in slot (if not current)
+            if not is_current and not w.reloading:
+                mini_ammo = w.ammo
+                mini_col = DANGER if mini_ammo == 0 else ON_SECONDARY
+                mini_text = font.render(str(mini_ammo), True, mini_col)
+                screen.blit(mini_text, (sx + slot_w - mini_text.get_width() - 8, slot_y))
 
     def _draw_wave_info(self, screen, font, wave_info):
         if wave_info['breather']:
