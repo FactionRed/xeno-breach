@@ -10,6 +10,10 @@ import os
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
+# Save file version — increment when save format changes.
+# Migration functions in _migrate() handle upgrading old saves.
+SAVE_VERSION = 2
+
 
 # ============ UPGRADE DEFINITIONS ============
 
@@ -116,6 +120,7 @@ class MetaState:
         self.total_runs = 0
         self.total_extractions = 0
         self.best_wave = 0
+        self.save_version = SAVE_VERSION
         self._load()
 
     def _save_path(self):
@@ -124,6 +129,9 @@ class MetaState:
         os.makedirs(d, exist_ok=True)
         return os.path.join(d, 'save.json')
 
+    def _backup_path(self):
+        return self._save_path() + '.bak'
+
     def _load(self):
         path = self._save_path()
         if not os.path.exists(path):
@@ -131,17 +139,62 @@ class MetaState:
         try:
             with open(path) as f:
                 data = json.load(f)
-            self.salvage = data.get('salvage', 0)
-            self.upgrades = {k: data.get('upgrades', {}).get(k, 0) for k in UPGRADES}
-            self.total_kills = data.get('total_kills', 0)
-            self.total_runs = data.get('total_runs', 0)
-            self.total_extractions = data.get('total_extractions', 0)
-            self.best_wave = data.get('best_wave', 0)
         except (json.JSONDecodeError, IOError):
-            pass  # Corrupted save — start fresh
+            # Try backup
+            if os.path.exists(self._backup_path()):
+                try:
+                    with open(self._backup_path()) as f:
+                        data = json.load(f)
+                    print("[meta] Save corrupted — restored from backup")
+                except (json.JSONDecodeError, IOError):
+                    pass  # Both corrupted — start fresh
+                    return
+            else:
+                return
+
+        # Backup before loading (in case future load corrupts something)
+        try:
+            import shutil
+            shutil.copy2(path, self._backup_path())
+        except IOError:
+            pass
+
+        # Version detection + migration
+        version = data.get('save_version', 1)
+        data = self._migrate(data, version)
+
+        # Load fields (all use .get with defaults for forward compat)
+        self.salvage = data.get('salvage', 0)
+        self.upgrades = {k: data.get('upgrades', {}).get(k, 0) for k in UPGRADES}
+        self.total_kills = data.get('total_kills', 0)
+        self.total_runs = data.get('total_runs', 0)
+        self.total_extractions = data.get('total_extractions', 0)
+        self.best_wave = data.get('best_wave', 0)
+
+    def _migrate(self, data, version):
+        """Run migrations to bring save data up to current version."""
+        # v1 → v2: add save_version field (no data changes needed,
+        #           just flagging that the save is versioned now)
+        if version < 2:
+            # v1 saves had no version field — data is compatible as-is
+            print("[meta] Migrating save from v1 → v2")
+            data['save_version'] = 2
+
+        # Future migrations go here:
+        # if version < 3:
+        #     # Example: rename 'health' to 'armor'
+        #     ups = data.get('upgrades', {})
+        #     if 'health' in ups and 'armor' not in ups:
+        #         ups['armor'] = ups.pop('health')
+        #     data['upgrades'] = ups
+        #     data['save_version'] = 3
+
+        data['save_version'] = SAVE_VERSION
+        return data
 
     def save(self):
         data = {
+            'save_version': SAVE_VERSION,
             'salvage': self.salvage,
             'upgrades': self.upgrades,
             'total_kills': self.total_kills,
