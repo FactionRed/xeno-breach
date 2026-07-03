@@ -4,11 +4,20 @@ All screens use DESIGN.md token colors and IBM Plex Mono-style fonts.
 """
 import math
 import os
+import sys
 import pygame
 
 from config import (SCREEN_WIDTH, SCREEN_HEIGHT,
                     ON_PRIMARY, ON_SECONDARY, HULL_BLACK, ADRENALINE,
-                    DANGER, WARNING, ACID, BIO_MASS, CONSOLE)
+                    DANGER, WARNING, ACID, CONSOLE, BULKHEAD)
+
+def _resource_path(*parts):
+    """Resolve a bundled resource path (works in PyInstaller exe and dev)."""
+    if getattr(sys, 'frozen', False):
+        base = sys._MEIPASS
+    else:
+        base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, *parts)
 
 
 class MenuRenderer:
@@ -19,10 +28,8 @@ class MenuRenderer:
         # Load splash background
         self._splash = None
         self._gameover_bg = None
-        splash_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                   "assets", "splash_background.png")
-        gameover_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                     "assets", "gameover_background.png")
+        splash_path = _resource_path("assets", "splash_background.png")
+        gameover_path = _resource_path("assets", "gameover_background.png")
         if os.path.exists(splash_path):
             self._splash = pygame.image.load(splash_path)
             self._splash = pygame.transform.smoothscale(self._splash,

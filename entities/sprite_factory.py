@@ -11,6 +11,7 @@ XENOMORPH SPRITES: procedural dark segmented alien with glowing acid eyes.
 """
 import math
 import random
+import sys
 import pygame
 import numpy as np
 
@@ -580,6 +581,8 @@ def make_player_frames(state, direction='front'):
     import os as _os
     _json_path = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
                                'sprites_json', 'all_sprites.json')
+    if getattr(sys, 'frozen', False):
+        _json_path = _os.path.join(sys._MEIPASS, 'sprites_json', 'all_sprites.json')
     if _os.path.exists(_json_path):
         with open(_json_path) as f:
             _all_sprites = _json.load(f)
