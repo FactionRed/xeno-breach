@@ -1,4 +1,4 @@
-"""Xeno Breach — Phase 4: Polished Release
+"""Xeno Breach — Survival Shooter
 
 Full roguelite survival shooter with:
   - Procedural terrain from planet_generator.py pipeline
