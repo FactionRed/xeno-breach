@@ -83,35 +83,70 @@ WEAPON_STATS = {
         'area_denial': True,
         'reload_time': 2.5,
     },
+    'smg': {
+        'damage': 8, 'fire_rate': 50, 'mag_size': 50,
+        'range': 500, 'spread': 4.0, 'pellets': 1,
+        'tracer_color': [120, 255, 120],
+        'muzzle_flash': True,
+        'reload_time': 1.8,
+    },
+    'railgun': {
+        'damage': 80, 'fire_rate': 800, 'mag_size': 5,
+        'range': 1200, 'spread': 0.5, 'pellets': 1,
+        'tracer_color': [0, 217, 255],
+        'muzzle_flash': True,
+        'pierce': True,
+        'reload_time': 3.0,
+    },
 }
 
-WEAPON_ORDER = ['pulse_rifle', 'shotgun', 'flamethrower']
+# All weapons available in the game
+WEAPON_ORDER = ['pulse_rifle', 'shotgun', 'flamethrower', 'smg', 'railgun']
+
+# Weapons unlocked by default (starter loadout)
+DEFAULT_WEAPONS = ['pulse_rifle', 'shotgun', 'flamethrower']
+
+# Weapon unlock costs in salvage
+WEAPON_UNLOCK_COST = {
+    'smg': 30,
+    'railgun': 60,
+}
+
+# Short display names for HUD slots
+WEAPON_SHORT_NAMES = {
+    'pulse_rifle': 'RIFLE', 'shotgun': 'SHOT', 'flamethrower': 'FLAME',
+    'smg': 'SMG', 'railgun': 'RAIL',
+}
 
 
 class WeaponSystem:
     """Manages weapon inventory, switching, and current weapon state."""
-    def __init__(self):
+    def __init__(self, loadout=None):
+        """Initialize with a loadout (list of 3 weapon names) or defaults."""
+        if loadout is None:
+            loadout = DEFAULT_WEAPONS[:]
+        self.loadout = loadout[:3]  # max 3 weapons
         self.weapons = {}
-        for name in WEAPON_ORDER:
+        for name in self.loadout:
             self.weapons[name] = Weapon(name, WEAPON_STATS[name])
         self.current_idx = 0
-        self.current_name = WEAPON_ORDER[0]
+        self.current_name = self.loadout[0] if self.loadout else 'pulse_rifle'
 
     @property
     def current(self):
-        return self.weapons[self.current_name]
+        return self.weapons.get(self.current_name)
 
     def switch_to(self, idx):
-        if 0 <= idx < len(WEAPON_ORDER):
+        if 0 <= idx < len(self.loadout):
             self.current_idx = idx
-            self.current_name = WEAPON_ORDER[idx]
+            self.current_name = self.loadout[idx]
             return True
         return False
 
     def switch_by_key(self, key):
         """Switch weapon by number key 1-3."""
-        idx_map = {pygame.K_1: 0, pygame.K_2: 1, pygame.K_3: 2}
         import pygame
+        idx_map = {pygame.K_1: 0, pygame.K_2: 1, pygame.K_3: 2}
         if key in idx_map:
             return self.switch_to(idx_map[key])
         return False

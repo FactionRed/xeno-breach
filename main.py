@@ -288,7 +288,7 @@ class Game:
         self.biome = pick_biome(self.run_seed)
         self.player = Player(WORLD_W / 2, WORLD_H / 2)
         self.player_sprite = PlayerSprite()
-        self.weapons = WeaponSystem()
+        self.weapons = WeaponSystem(loadout=self.meta.get_loadout())
         self.particles = ParticleSystem()
         self.projectiles = ProjectileSystem()
         self.acid_pools = []
@@ -308,8 +308,8 @@ class Game:
         self.player.health = self.player.max_health
         self.player.speed *= self.meta.speed_mult
         # Apply weapon upgrades
-        from combat.weapons import WEAPON_STATS, WEAPON_ORDER
-        for wname in WEAPON_ORDER:
+        from combat.weapons import WEAPON_STATS
+        for wname in self.weapons.loadout:
             w = self.weapons.weapons[wname]
             w.mag_size = int(WEAPON_STATS[wname]['mag_size'] * self.meta.ammo_mult)
             w.ammo = w.mag_size

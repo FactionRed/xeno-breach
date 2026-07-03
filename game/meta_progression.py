@@ -12,7 +12,7 @@ from typing import Dict, List, Optional
 
 # Save file version — increment when save format changes.
 # Migration functions in _migrate() handle upgrading old saves.
-SAVE_VERSION = 2
+SAVE_VERSION = 3
 
 
 # ============ UPGRADE DEFINITIONS ============
@@ -120,6 +120,8 @@ class MetaState:
         self.total_runs = 0
         self.total_extractions = 0
         self.best_wave = 0
+        self.unlocked_weapons = ['pulse_rifle', 'shotgun', 'flamethrower']
+        self.loadout = ['pulse_rifle', 'shotgun', 'flamethrower']
         self.save_version = SAVE_VERSION
         self._load()
 
@@ -170,15 +172,24 @@ class MetaState:
         self.total_runs = data.get('total_runs', 0)
         self.total_extractions = data.get('total_extractions', 0)
         self.best_wave = data.get('best_wave', 0)
+        self.unlocked_weapons = data.get('unlocked_weapons', ['pulse_rifle', 'shotgun', 'flamethrower'])
+        self.loadout = data.get('loadout', ['pulse_rifle', 'shotgun', 'flamethrower'])
 
     def _migrate(self, data, version):
         """Run migrations to bring save data up to current version."""
-        # v1 → v2: add save_version field (no data changes needed,
-        #           just flagging that the save is versioned now)
+        # v1 → v2: add save_version field
         if version < 2:
-            # v1 saves had no version field — data is compatible as-is
             print("[meta] Migrating save from v1 → v2")
             data['save_version'] = 2
+
+        # v2 → v3: add unlocked_weapons and loadout (default = 3 starter weapons)
+        if version < 3:
+            print("[meta] Migrating save from v2 → v3")
+            if 'unlocked_weapons' not in data:
+                data['unlocked_weapons'] = ['pulse_rifle', 'shotgun', 'flamethrower']
+            if 'loadout' not in data:
+                data['loadout'] = ['pulse_rifle', 'shotgun', 'flamethrower']
+            data['save_version'] = 3
 
         # Future migrations go here:
         # if version < 3:
@@ -201,6 +212,8 @@ class MetaState:
             'total_runs': self.total_runs,
             'total_extractions': self.total_extractions,
             'best_wave': self.best_wave,
+            'unlocked_weapons': self.unlocked_weapons,
+            'loadout': self.loadout,
         }
         with open(self._save_path(), 'w') as f:
             json.dump(data, f, indent=2)
@@ -290,3 +303,52 @@ class MetaState:
         if extracted:
             self.total_extractions += 1
         self.save()
+
+    # ============ WEAPON UNLOCKS ============
+
+    def is_weapon_unlocked(self, name):
+        return name in self.unlocked_weapons
+
+    def get_weapon_unlock_cost(self, name):
+        from combat.weapons import WEAPON_UNLOCK_COST
+        return WEAPON_UNLOCK_COST.get(name)
+
+    def can_unlock_weapon(self, name):
+        if self.is_weapon_unlocked(name):
+            return False
+        cost = self.get_weapon_unlock_cost(name)
+        return cost is not None and self.salvage >= cost
+
+    def unlock_weapon(self, name):
+        if not self.can_unlock_weapon(name):
+            return False
+        cost = self.get_weapon_unlock_cost(name)
+        self.salvage -= cost
+        self.unlocked_weapons.append(name)
+        self.save()
+        return True
+
+    # ============ LOADOUT ============
+
+    def set_loadout(self, weapons):
+        """Set the 3-weapon loadout for the next run."""
+        # Validate: must be 3 weapons, all unlocked
+        if len(weapons) != 3:
+            return False
+        for w in weapons:
+            if not self.is_weapon_unlocked(w):
+                return False
+        self.loadout = list(weapons)
+        self.save()
+        return True
+
+    def get_loadout(self):
+        """Get the current loadout (list of 3 weapon names)."""
+        # Ensure loadout only contains unlocked weapons
+        valid = [w for w in self.loadout if self.is_weapon_unlocked(w)]
+        while len(valid) < 3:
+            for w in ['pulse_rifle', 'shotgun', 'flamethrower']:
+                if w not in valid:
+                    valid.append(w)
+                    break
+        return valid[:3]

@@ -204,7 +204,9 @@ class HUD:
         # Weapon slots (1-2-3 at bottom of panel)
         slot_y = py + panel_h - 18
         slot_w = (panel_w - 24) // 3
-        for i, wname in enumerate(WEAPON_ORDER):
+        from combat.weapons import WEAPON_SHORT_NAMES
+        loadout = weapons.loadout
+        for i, wname in enumerate(loadout):
             sx = px + 12 + i * slot_w
             is_current = (i == weapons.current_idx)
             w = weapons.weapons[wname]
@@ -218,7 +220,7 @@ class HUD:
 
             # Slot number + short name
             slot_col = ADRENALINE if is_current else ON_SECONDARY
-            short_name = {'pulse_rifle': 'RIFLE', 'shotgun': 'SHOT', 'flamethrower': 'FLAME'}.get(wname, wname[:4].upper())
+            short_name = WEAPON_SHORT_NAMES.get(wname, wname[:4].upper())
             slot_text = font.render(f"{i+1} {short_name}", True, slot_col)
             screen.blit(slot_text, (sx + 4, slot_y))
 
