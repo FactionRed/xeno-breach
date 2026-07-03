@@ -12,9 +12,9 @@ import os
 SPRITE_SIZE = 32
 
 COLOR_MAP = {
-    '#0A0A0E': 'O', '#3A4045': 'A', '#505860': 'a', '#23282C': 'd',
-    '#16161A': 'U', '#00D9FF': 'V', '#FF6B00': 'X', '#FFFFFF': 'W',
-    '#2A2F33': 's',
+    '#0A0A0E': 'O', '#2A2A2A': 'A', '#3A3A3A': 'a', '#1A1A1A': 'd',
+    '#16161A': 'U', '#00CED1': 'V', '#FF6B00': 'X', '#9A9A9A': 'W',
+    '#222222': 's',
 }
 CHAR_MAP = {v: k for k, v in COLOR_MAP.items()}
 
