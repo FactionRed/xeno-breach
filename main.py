@@ -384,7 +384,10 @@ class Game:
         self.player_sprite.update(dt, self.player, is_firing, is_reloading)
 
         # Wave director
+        prev_wave = self.wave_director.wave_number
         enemies = self.wave_director.update(dt, self.player)
+        if self.wave_director.wave_number > prev_wave:
+            self.audio.play('wave_alarm', volume=0.4)
 
         # Xeno sprites
         for e in enemies:
@@ -472,10 +475,13 @@ class Game:
         # HUD update
         self.hud.update(dt, self.player, enemies, self.terrain)
 
-        # Audio update (motion tracker ping)
+        # Audio update (motion tracker ping + footsteps)
         near = sum(1 for e in enemies if not e.dead and
                    abs(e.x - self.player.x) < 200 and abs(e.y - self.player.y) < 200)
         self.audio.update(dt, near)
+        moving = (dx_move != 0 or dy_move != 0)
+        sprinting = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
+        self.audio.update_footsteps(dt, moving, sprinting)
 
         # Objective
         if self.objective:
