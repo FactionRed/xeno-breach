@@ -121,8 +121,8 @@ class ArmoryScreen:
                 self._try_unlock_or_confirm_loadout(meta)
             return None
         elif key == pygame.K_SPACE:
-            if self.tab == 1:
-                self._apply_loadout(meta)
+            # Always apply loadout before deploying (in case user edited it)
+            self._apply_loadout(meta)
             return 'deploy'
         elif key == pygame.K_ESCAPE:
             return 'back'
