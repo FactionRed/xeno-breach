@@ -96,29 +96,27 @@ def make_pulse_rifle():
 
 
 def make_shotgun():
-    """Layered: deep boom + pump action + shell ring."""
+    """Deep boom + pump ring — recognizable shotgun character."""
     dur = 0.35
     n = int(dur * SAMPLE_RATE)
     t = np.linspace(0, dur, n)
 
-    # Layer 1: Deep boom (low noise + sub-bass)
-    boom_noise = np.random.randn(n) * 0.7
-    boom_low = np.sin(2 * np.pi * 60 * t) * 0.6
-    boom_low += np.sin(2 * np.pi * 40 * t) * 0.4
-    boom_env = _envelope(n, attack=0.002, decay=0.15)
-    boom = (boom_noise + boom_low) * boom_env * 0.8
+    # Layer 1: Deep boom (low-frequency body)
+    boom = np.sin(2 * np.pi * 70 * t) * 0.8
+    boom += np.sin(2 * np.pi * 45 * t) * 0.5
+    boom_env = _envelope(n, attack=0.003, decay=0.12)
+    boom = boom * boom_env
 
-    # Layer 2: Pump action (mechanical click at 0.2s)
-    pump_t = t - 0.2
-    pump = np.exp(-pump_t * 150) * np.sin(2 * np.pi * 1200 * t) * 0.3
-    pump[pump_t < 0] = 0
-    pump += np.exp(-pump_t * 200) * np.sin(2 * np.pi * 800 * t) * 0.2
+    # Layer 2: Sharp crack (noise burst at start for the "bang")
+    crack = np.random.randn(n) * 0.3
+    crack_env = _envelope(n, attack=0.001, decay=0.03)
+    crack = crack * crack_env
 
-    # Layer 3: Shell ring (high metallic ring)
-    ring = np.sin(2 * np.pi * 3200 * t) * 0.1 * np.exp(-t * 25)
-    ring += np.sin(2 * np.pi * 4800 * t) * 0.05 * np.exp(-t * 30)
+    # Layer 3: Metallic ring (high frequency, slow decay)
+    ring = np.sin(2 * np.pi * 2800 * t) * 0.08 * np.exp(-t * 20)
+    ring += np.sin(2 * np.pi * 4200 * t) * 0.04 * np.exp(-t * 25)
 
-    return _to_sound(boom + pump + ring)
+    return _to_sound((boom + crack + ring) * 0.45)
 
 
 def make_flamethrower():
@@ -152,29 +150,23 @@ def make_flamethrower():
 
 
 def make_reload():
-    """Three-stage: mag out + mag in + charging handle."""
+    """Two metallic clicks — recognizable mag swap."""
     dur = 0.5
     n = int(dur * SAMPLE_RATE)
     t = np.linspace(0, dur, n)
 
-    # Stage 1: Mag out (low click at 0.05s)
-    click1_t = t - 0.05
-    click1 = np.exp(-click1_t * 250) * np.sin(2 * np.pi * 600 * t) * 0.3
-    click1[click1_t < 0] = 0
+    # Click 1: mag out (short metallic tick at 0.08s)
+    c1_t = t - 0.08
+    c1 = np.exp(-c1_t * 400) * np.sin(2 * np.pi * 900 * t) * 0.15
+    c1[c1_t < 0] = 0
 
-    # Stage 2: Mag in (heavier click at 0.2s)
-    click2_t = t - 0.2
-    click2 = np.exp(-click2_t * 200) * np.sin(2 * np.pi * 400 * t) * 0.4
-    click2[click2_t < 0] = 0
-    click2 += np.exp(-click2_t * 150) * np.sin(2 * np.pi * 250 * t) * 0.2
+    # Click 2: mag in + charge (heavier clack at 0.25s)
+    c2_t = t - 0.25
+    c2 = np.exp(-c2_t * 300) * np.sin(2 * np.pi * 600 * t) * 0.2
+    c2[c2_t < 0] = 0
+    c2 += np.exp(-c2_t * 250) * np.sin(2 * np.pi * 400 * t) * 0.1
 
-    # Stage 3: Charging handle (metallic slide at 0.35s)
-    slide_t = t - 0.35
-    slide = np.exp(-slide_t * 180) * np.sin(2 * np.pi * 1000 * t) * 0.25
-    slide[slide_t < 0] = 0
-    slide += np.exp(-slide_t * 120) * np.sin(2 * np.pi * 700 * t) * 0.15
-
-    return _to_sound(click1 + click2 + slide)
+    return _to_sound((c1 + c2) * 0.5)
 
 
 # ============ ALIEN SOUNDS ============
@@ -350,21 +342,37 @@ class AudioSystem:
             return
 
         print("[audio] Generating SFX...")
-        self.sfx = {
-            'pulse_rifle': make_pulse_rifle(),
-            'shotgun': make_shotgun(),
-            'flamethrower': make_flamethrower(),
-            'reload': make_reload(),
-            'xeno_screech': make_xeno_screech(),
-            'xeno_death': make_xeno_death(),
-            'hit_marker': make_hit_marker(),
-            'player_hurt': make_player_hurt(),
-            'footstep': make_footstep(),
-            'ping': make_ping(),
-            'ui_click': make_ui_click(),
-            'extraction': make_extraction(),
-            'wave_alarm': make_wave_alarm(),
-        }
+
+        # Try loading processed WAV files first, fall back to procedural
+        import os as _os
+        audio_dir = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
+                                  '..', 'assets', 'audio')
+        if getattr(__import__('sys'), 'frozen', False):
+            audio_dir = _os.path.join(__import__('sys')._MEIPASS, 'assets', 'audio')
+
+        self.sfx = {}
+        wav_sounds = ['pulse_rifle', 'shotgun', 'flamethrower', 'reload']
+        for name in wav_sounds:
+            wav_path = _os.path.join(audio_dir, f'{name}.wav')
+            if _os.path.exists(wav_path):
+                try:
+                    self.sfx[name] = pygame.mixer.Sound(wav_path)
+                    continue
+                except pygame.error:
+                    pass
+            # Fallback to procedural
+            self.sfx[name] = self._make_procedural(name)
+
+        # Always-procedural sounds
+        self.sfx['xeno_screech'] = make_xeno_screech()
+        self.sfx['xeno_death'] = make_xeno_death()
+        self.sfx['hit_marker'] = make_hit_marker()
+        self.sfx['player_hurt'] = make_player_hurt()
+        self.sfx['footstep'] = make_footstep()
+        self.sfx['ping'] = make_ping()
+        self.sfx['ui_click'] = make_ui_click()
+        self.sfx['extraction'] = make_extraction()
+        self.sfx['wave_alarm'] = make_wave_alarm()
         print("[audio] Ready.")
 
         # Ping timer
@@ -372,6 +380,17 @@ class AudioSystem:
         # Footstep timer
         self.footstep_timer = 0.0
         self.footstep_interval = 0.35
+
+    def _make_procedural(self, name):
+        """Fallback procedural sound generator."""
+        makers = {
+            'pulse_rifle': make_pulse_rifle,
+            'shotgun': make_shotgun,
+            'flamethrower': make_flamethrower,
+            'reload': make_reload,
+        }
+        fn = makers.get(name)
+        return fn() if fn else make_ui_click()
 
     def play(self, name, volume=1.0):
         if not self.enabled or self.muted:

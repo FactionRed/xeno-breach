@@ -546,7 +546,9 @@ class Game:
         # Weapon sound
         snd_map = {'pulse_rifle': 'pulse_rifle', 'shotgun': 'shotgun',
                    'flamethrower': 'flamethrower'}
-        self.audio.play(snd_map.get(weapon.name, 'pulse_rifle'), volume=0.3)
+        vol_map = {'pulse_rifle': 0.35, 'shotgun': 0.25, 'flamethrower': 0.3}
+        self.audio.play(snd_map.get(weapon.name, 'pulse_rifle'),
+                        volume=vol_map.get(weapon.name, 0.3))
 
         for angle_offset in angles:
             shot_angle = facing + angle_offset
