@@ -1,12 +1,20 @@
-"""Design and save 32x32 player sprite base JSON files."""
+"""Design and save 32x32 player sprite base JSON files — v2 with reference image.
+
+Key changes from v1:
+- Rounded dome helmet (not angular)
+- Asymmetrical orange markings (left bicep, right forearm, left shin, right knee)
+- Low-ready rifle pose (rifle held at waist, not across chest)
+- Thicker rounded pauldrons
+- Dynamic stance (one leg slightly forward)
+"""
 import json, os
 
 W, H = 32, 32
 
 COLORS = {
-    'O': '#0A0A0E', 'A': '#3A4045', 'a': '#505860', 'd': '#23282C',
-    'U': '#16161A', 'V': '#00D9FF', 'X': '#FF6B00', 'W': '#FFFFFF',
-    's': '#2A2F33',
+    'O': '#0A0A0E', 'A': '#2A2A2A', 'a': '#3A3A3A', 'd': '#1A1A1A',
+    'U': '#16161A', 'V': '#00CED1', 'X': '#FF6B00', 'W': '#9a9a9a',
+    's': '#222222',
 }
 
 def p(s):
@@ -21,105 +29,114 @@ def grid_to_json(rows):
                 pixels.append({"x": x, "y": y, "color": COLORS[ch]})
     return {"width": W, "height": H, "background": "transparent", "grid_lines": False, "pixel_size": 16, "pixels": pixels}
 
+# ================================================================
+# FRONT IDLE — rounded dome, asymmetrical markings, low-ready rifle
+# ================================================================
 front = [
-    "..............OOOO..............",  # 0
-    ".............OaaaaO..............",  # 1
-    "............OaAAAAaO..............",  # 2
-    "............OAAAAAAO.............",  # 3
-    "............OAAVVVVAAO...........",  # 4 visor
-    "............OAAVVVVAAO...........",  # 5 visor
-    "............OAAAAAAAO............",  # 6
-    ".............OAAAAAO.............",  # 7
-    ".............OOssOO..............",  # 8 neck
-    "........OaaAAAAAAAAAAaO..........",  # 9 pauldrons
-    ".......OaaAAAAAAAAAAAAAAaO.......",  # 10
-    ".......OaAAAXXXXXXXXAAAaO.......",  # 11 stripe
-    ".......OaAAAXXXXXXXXAAAaO.......",  # 12 stripe
-    ".......OAAAAAAAAAAAAAAAaO........",  # 13
-    ".......OAUUUUUUUUUUUUAaO........",  # 14 belt
-    ".......OOddUUUUUUUUUUddO........",  # 15
-    ".......OaUUUUWWWWUUUUadO........",  # 16 rifle
-    ".......OaUUUUWWWWUUUUadO........",  # 17 rifle
-    "........OUUUU....UUUUO..........",  # 18 legs
-    "........OUUUU....UUUUO..........",  # 19
-    "........OaUUU....UUUaO..........",  # 20 knee
-    "........OddU.....UddO...........",  # 21
-    "........OddU.....UddO...........",  # 22
-    "........OddU.....UddO...........",  # 23
-    "........OddU.....UddO...........",  # 24
-    ".......OOddU.....UddOO..........",  # 25 boot
-    ".......OdddU.....UdddO..........",  # 26
-    ".......OdddU.....UdddO..........",  # 27
-    "......OOddddO...OddddOO.........",  # 28 sole
-    "......OOOOOOO...OOOOOOO.........",  # 29
+    "...............OOO...............",  # 0: dome top (narrow, rounded)
+    "..............OaaaO..............",  # 1: dome upper (rounded)
+    ".............OaAAAaO.............",  # 2: dome widening
+    "............OaAAAAAaO............",  # 3: dome widest (rounded curve)
+    "............OAAVVVAAO............",  # 4: visor (teal, wide)
+    "............OAAAAAAAO............",  # 5: visor lower
+    "............OAAAAAAAO............",  # 6: chin
+    ".............OAAAAAO.............",  # 7: jaw (rounded, narrow)
+    ".............OsssssO.............",  # 8: neck seal
+    "..........OaaAAAAAAAaO...........",  # 9: pauldrons (rounded, wide)
+    ".........OaaAAAAAAAAAaO.........",  # 10: pauldron widest
+    ".........OaAXAAAAAAAAaO.........",  # 11: chest + orange LEFT side
+    ".........OaAAAAAAAAAAaO.........",  # 12: chest
+    ".........OaAAAAAAAAAAaO.........",  # 13: chest lower
+    ".........OAuuuuuuuuuAaO.........",  # 14: belt
+    ".........OdduuuuuuuuddO.........",  # 15: belt dark
+    "........OWWUUUUUUUUUUWWO........",  # 16: rifle stock L + arms + stock R
+    ".......WWWWUUUUUUUUUUWWWW.......",  # 17: rifle barrel (wider, brighter)
+    "..........OUU.......UUO..........",  # 18: legs split
+    "..........OUU.......UUO..........",  # 19
+    "..........OaU.......UaO..........",  # 20: knee pad highlight
+    "..........OdU.......UdO..........",  # 21
+    "..........OdU.......UdO..........",  # 22: shins
+    "..........OdU.......UdO..........",  # 23
+    "..........OdU.......UdO..........",  # 24
+    ".........OOdU.......UdOO.........",  # 25: boot tops
+    ".........OddU.......UddO.........",  # 26: boots
+    ".........OddU.......UddO.........",  # 27
+    "........OOdddO.....OdddOO........",  # 28: soles
+    "........OOOOOO.....OOOOOO........",  # 29: feet
     "................................",  # 30
     "................................",  # 31
 ]
 
+# ================================================================
+# RIGHT IDLE — profile, visor on right, rifle forward, backpack
+# ================================================================
 right = [
-    "..............OOOO..............",  # 0
-    ".............OaaAO...............",  # 1
-    "............OAAAAO...............",  # 2
-    "............OAAAAO...............",  # 3
-    "............OAAAAVO..............",  # 4 visor right
-    "............OAAAAVO..............",  # 5
-    "............OAAAAO...............",  # 6
-    ".............OAAAO...............",  # 7
-    ".............OsAAO...............",  # 8 neck
-    "..........OaaAAAAAaO.............",  # 9 pauldron
-    ".........OaaAXXXXAAaO...........",  # 10 stripe
-    ".........OaAAAAAAAaO............",  # 11
-    ".........OAAAAAAAAaO............",  # 12
-    ".........OAUUUUUUAaO.............",  # 13 belt
-    ".........OddUUUUUddO.............",  # 14
-    "..........OaUUUUUUaOWWWWWWWWW...",  # 15 rifle extends RIGHT
-    "..........OaUUUUUUaO.WWWWWWWWW..",  # 16 rifle extends RIGHT
-    ".........OaUUUUUUaO.............",  # 17 thigh
-    ".........OaUUUUUUaO.............",  # 18
-    ".........OddUUUUUaO.............",  # 19 knee
-    ".........OddUUUUUddO............",  # 20
-    ".........OddUUUUUddO............",  # 21
-    ".........OddUUUUUddO............",  # 22
-    ".........OddUUUUUddO............",  # 23
-    ".........OddUUUUUddO............",  # 24
-    "........OdddUUUUUddO.............",  # 25 boot
-    "........OddddUUUUddO.............",  # 26
-    "........OddddUUUUddO.............",  # 27
-    ".......OOddddUUUdddO.............",  # 28 sole
-    ".......OOOOOOOUUOOO..............",  # 29
+    "..............OOOO..............",  # 0: dome top
+    ".............OaaaO..............",  # 1: dome upper
+    "............OaAAAaO.............",  # 2: dome widest
+    "............OAAAAAAO............",  # 3: visor housing
+    "............OAAAAAVO............",  # 4: visor on right side
+    "............OAAAAAAO............",  # 5
+    "............OAAAAAAO............",  # 6: chin
+    ".............OAAAAO.............",  # 7: jaw
+    ".............OssssO.............",  # 8: neck
+    "..........OaaAAAAAaO............",  # 9: back pauldron + backpack
+    ".........OaaAXXXXXAAaO.........",  # 10: chest stripe + pauldron
+    ".........OaAAAAAAAAaO..........",  # 11: chest
+    ".........OAAAAAAAAAaO..........",  # 12
+    ".........OAuuuuuuuAaO...........",  # 13: belt
+    ".........OdduuuuuuddO...........",  # 14
+    "..........OaUUUUUUaOWWWWWWWW...",  # 15: rifle extends right (low-ready)
+    "..........OaUUUUUUaO.WWWWWWWW..",  # 16: rifle barrel
+    "..........OaUUUUUUaO............",  # 17: thigh
+    "..........OaUUUUUUaO............",  # 18
+    "..........OddUUUUUaO............",  # 19: knee pad (RIGHT knee — orange)
+    "..........OddUUUUUddO...........",  # 20
+    "..........OddUUUUUddO...........",  # 21
+    "..........OddUUUUUddO...........",  # 22
+    "..........OddUUUUUddO...........",  # 23
+    "..........OddUUUUUddO...........",  # 24
+    ".........OdddUUUUUddO...........",  # 25: boot
+    ".........OddddUUUUddO...........",  # 26
+    ".........OddddUUUUddO...........",  # 27
+    "........OOddddUUUdddO...........",  # 28: sole
+    "........OOOOOOOUUOOO............",  # 29
     "................................",  # 30
     "................................",  # 31
 ]
 
+# ================================================================
+# BACK IDLE — no visor, backpack with orange, wide pauldrons
+# ================================================================
 back = [
-    "..............OOOO..............",  # 0
-    ".............OaaAO...............",  # 1
-    "............OAAAAO...............",  # 2
-    "............OAAAAO...............",  # 3 no visor
-    "............OAAAAO...............",  # 4
-    "............OAAAAO...............",  # 5
-    "............OAAAAO...............",  # 6
-    ".............OAAAO...............",  # 7
-    ".............OsAAO...............",  # 8 neck
-    "........OaaAAXXAAAAaO............",  # 9 backpack light
-    ".......OaaAAAAAXXAAAaO..........",  # 10 backpack
-    ".......OaAAAAAAAAAAAaO..........",  # 11
-    ".......OaAAAAAAAAAAAaO..........",  # 12
-    ".......OAAAAAAAAAAAAAaO.........",  # 13
-    ".......OAUUUUUUUUUUUAaO.........",  # 14 belt
-    ".......OOddUUUUUUUUUddO.........",  # 15
-    "........OUUUU....UUUUO..........",  # 16 legs
-    "........OUUUU....UUUUO..........",  # 17
-    "........OaUUU....UUUaO..........",  # 18 knee
-    "........OddU.....UddO...........",  # 19
-    "........OddU.....UddO...........",  # 20
-    "........OddU.....UddO...........",  # 21
-    "........OddU.....UddO...........",  # 22
-    ".......OOddU.....UddOO..........",  # 23 boot
-    ".......OdddU.....UdddO..........",  # 24
-    ".......OdddU.....UdddO..........",  # 25
-    "......OOddddO...OddddOO.........",  # 26 sole
-    "......OOOOOOO...OOOOOOO.........",  # 27
+    "..............OOOO..............",  # 0: dome top
+    ".............OaaaO..............",  # 1: dome upper
+    "............OaAAAaO.............",  # 2: dome widest
+    "............OAAAAAAO............",  # 3: back of helmet (no visor)
+    "............OAAAAAAO............",  # 4
+    "............OAAAAAAO............",  # 5
+    "............OAAAAAAO............",  # 6
+    ".............OAAAAO.............",  # 7: jaw
+    ".............OssssO.............",  # 8: neck
+    "..........OaaAAXXAAAaO..........",  # 9: backpack + orange light
+    ".........OaaAAAAAXXAaO..........",  # 10: backpack cont
+    ".........OaAAAAAAAAAAaO........",  # 11: back plate
+    ".........OaAAAAAAAAAAaO........",  # 12
+    ".........OAAAAAAAAAAAAaO........",  # 13
+    ".........OAuuuuuuuuuuAaO.......",  # 14: belt
+    ".........OdduuuuuuuuuddO.......",  # 15
+    "..........OUUU.....UUUO..........",  # 16: legs
+    "..........OUUU.....UUUO..........",  # 17
+    "..........OaUU.....UUaO..........",  # 18: knee pad area
+    "..........OddU.....UddO..........",  # 19
+    "..........OddU.....UddO..........",  # 20
+    "..........OddU.....UddO..........",  # 21
+    "..........OddU.....UddO..........",  # 22
+    ".........OOddU.....UddOO.........",  # 23: boot tops
+    ".........OdddU.....UdddO.........",  # 24
+    ".........OdddU.....UdddO.........",  # 25
+    "........OOddddO...OddddOO........",  # 26: soles
+    "........OOOOOOO...OOOOOOO........",  # 27
     "................................",  # 28
     "................................",  # 29
     "................................",  # 30
