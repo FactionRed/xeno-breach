@@ -35,6 +35,14 @@ class ArmoryScreen:
         # Loadout selection: index into unlocked_weapons for each slot
         self.loadout_edit = [0, 1, 2]  # indices into unlocked list
         self.loadout_slot = 0  # which slot we're editing
+        self._loadout_synced = False  # sync from save on first draw
+
+    def reset(self):
+        """Call when entering the armory to re-sync from saved loadout."""
+        self._loadout_synced = False
+        self.tab = 0
+        self.selected = 0
+        self.loadout_slot = 0
 
     def update(self, dt):
         self.anim_time += dt
@@ -218,13 +226,16 @@ class ArmoryScreen:
         unlocked = meta.unlocked_weapons
         current_loadout = meta.get_loadout()
 
-        # Sync loadout_edit indices with actual loadout
-        for i in range(3):
-            if i < len(current_loadout):
-                try:
-                    self.loadout_edit[i] = unlocked.index(current_loadout[i])
-                except ValueError:
-                    self.loadout_edit[i] = 0
+        # Sync loadout_edit indices with actual loadout ONLY on first entry
+        # (don't overwrite user edits every frame)
+        if not hasattr(self, '_loadout_synced') or not self._loadout_synced:
+            for i in range(3):
+                if i < len(current_loadout):
+                    try:
+                        self.loadout_edit[i] = unlocked.index(current_loadout[i])
+                    except ValueError:
+                        self.loadout_edit[i] = 0
+            self._loadout_synced = True
 
         y_start = 128
 

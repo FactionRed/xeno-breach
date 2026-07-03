@@ -197,6 +197,7 @@ class Game:
                                 self._start_new_run()
                             elif self.menu_selected == 1:
                                 self.audio.play('ui_click')
+                                self.armory.reset()
                                 self.sm.transition(GameState.ARMORY)
                             else:
                                 running = False
@@ -237,6 +238,7 @@ class Game:
                     elif self.sm.is_gameover:
                         if event.key == pygame.K_RETURN:
                             self.audio.play('ui_click')
+                            self.armory.reset()
                             self.sm.transition(GameState.ARMORY)
 
             self.menus.update(raw_dt)
