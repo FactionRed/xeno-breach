@@ -179,6 +179,51 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    # Mouse click — route to active screen
+                    pos = event.pos
+                    if self.sm.is_menu:
+                        result = self.menus.handle_title_mouse(pos, True)
+                        if result >= 0:
+                            self.menu_selected = result
+                            self.audio.play('ui_click')
+                            if result == 0:
+                                self._start_new_run()
+                            elif result == 1:
+                                self.armory.reset()
+                                self.sm.transition(GameState.ARMORY)
+                            elif result == 2:
+                                self.sm.transition(GameState.OPTIONS)
+                            elif result == 3:
+                                running = False
+                    elif self.sm.current_state == GameState.PAUSED:
+                        result = self.menus.handle_pause_mouse(pos, True)
+                        if result >= 0:
+                            self.pause_selected = result
+                            self.audio.play('ui_click')
+                            if result == 0:
+                                self.sm.transition(GameState.PLAYING)
+                            elif result == 1:
+                                self._start_new_run()
+                            elif result == 2:
+                                self.sm.transition(GameState.OPTIONS)
+                            elif result == 3:
+                                self.sm.transition(GameState.MENU)
+                    elif self.sm.is_armory:
+                        result = self.armory.handle_mouse(pos, True, self.meta)
+                        if result == 'deploy':
+                            self._start_new_run()
+                        elif result == 'back':
+                            self.sm.transition(GameState.MENU)
+                    elif self.sm.is_options:
+                        result = self.options.handle_mouse(pos, True)
+                        if result == 'apply':
+                            self._apply_settings()
+                        elif result == 'back':
+                            if self.sm.previous_state == GameState.PAUSED:
+                                self.sm.transition(GameState.PAUSED)
+                            else:
+                                self.sm.transition(GameState.MENU)
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         if self.sm.is_menu:

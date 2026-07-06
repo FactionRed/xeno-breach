@@ -70,6 +70,8 @@ class ArmoryScreen:
         self.loadout_edit = [0, 1, 2]
         self.loadout_slot = 0
         self._loadout_synced = False
+        # Mouse click rects
+        self._click_rects = []  # (rect, action) pairs
 
     def reset(self):
         """Call when entering the armory to re-sync from saved loadout."""
@@ -165,25 +167,73 @@ class ArmoryScreen:
         self.purchase_msg = msg
         self.purchase_msg_color = color
 
+    def handle_mouse(self, pos, clicked, meta):
+        """Handle mouse input. Returns 'deploy', 'back', or None."""
+        for rect, action in self._click_rects:
+            if rect.collidepoint(pos):
+                if not clicked:
+                    return None  # just hovering
+                if action == 'deploy':
+                    self._apply_loadout(meta)
+                    return 'deploy'
+                elif action == 'back':
+                    return 'back'
+                elif action.startswith('tab_'):
+                    self.tab = int(action.split('_')[1])
+                    self.selected = 0
+                    self.loadout_slot = 0
+                return None
+        return None
+
     # ============ DRAW ============
 
     def draw(self, screen, meta: MetaState, font, big_font, small_font):
         screen.fill(HULL_BLACK)
+        self._click_rects = []  # reset click targets
 
         # Title
         title = big_font.render("ARMORY", True, ADRENALINE)
         screen.blit(title, title.get_rect(center=(SCREEN_WIDTH // 2, 36)))
 
-        # Tabs
+        # Tabs — clickable
         tab_y = 64
+        mouse_pos = pygame.mouse.get_pos()
         for i, label in enumerate(["UPGRADES", "WEAPONS"]):
             col = ADRENALINE if i == self.tab else ON_SECONDARY
             txt = font.render(label, True, col)
             x = SCREEN_WIDTH // 2 + (i - 0.5) * 160 - txt.get_width() // 2
+            tab_rect = txt.get_rect(topleft=(x, tab_y)).inflate(20, 10)
+            if tab_rect.collidepoint(mouse_pos):
+                col = ADRENALINE
+                bg = pygame.Surface((tab_rect.w, tab_rect.h), pygame.SRCALPHA)
+                bg.fill((*ADRENALINE, 20))
+                screen.blit(bg, tab_rect.topleft)
             screen.blit(txt, (x, tab_y))
-            # Underline active tab
             if i == self.tab:
                 pygame.draw.line(screen, ADRENALINE, (x, tab_y + 20), (x + txt.get_width(), tab_y + 20), 2)
+            self._click_rects.append((tab_rect, f'tab_{i}'))
+
+        # Deploy button (bottom center)
+        deploy_rect = pygame.Rect(SCREEN_WIDTH // 2 - 80, SCREEN_HEIGHT - 50, 160, 30)
+        deploy_hover = deploy_rect.collidepoint(mouse_pos)
+        deploy_col = ADRENALINE if deploy_hover else WARNING
+        pygame.draw.rect(screen, (20, 24, 28), deploy_rect)
+        pygame.draw.rect(screen, deploy_col, deploy_rect, 2)
+        deploy_txt = font.render("DEPLOY", True, deploy_col)
+        screen.blit(deploy_txt, deploy_txt.get_rect(center=deploy_rect.center))
+        self._click_rects.append((deploy_rect, 'deploy'))
+
+        # ESC button (bottom left)
+        esc_rect = pygame.Rect(40, SCREEN_HEIGHT - 50, 100, 30)
+        if esc_rect.collidepoint(mouse_pos):
+            pygame.draw.rect(screen, (30, 34, 38), esc_rect)
+            pygame.draw.rect(screen, DANGER, esc_rect, 2)
+        else:
+            pygame.draw.rect(screen, (20, 24, 28), esc_rect)
+            pygame.draw.rect(screen, ON_SECONDARY, esc_rect, 2)
+        esc_txt = font.render("MENU", True, ON_SECONDARY)
+        screen.blit(esc_txt, esc_txt.get_rect(center=esc_rect.center))
+        self._click_rects.append((esc_rect, 'back'))
 
         # Salvage
         salvage_text = font.render(f"Salvage: {meta.salvage}", True, WARNING)

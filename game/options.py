@@ -86,7 +86,8 @@ class OptionsScreen:
         self.settings = settings
         self.selected = 0
         self.anim_time = 0.0
-        self.needs_apply = False  # set when resolution/fullscreen changes
+        self.needs_apply = False
+        self._click_rects = []  # (rect, action) pairs
 
     @property
     def items(self):
@@ -123,6 +124,28 @@ class OptionsScreen:
             if self.needs_apply:
                 return 'apply'
             return 'back'
+        return None
+
+    def handle_mouse(self, pos, clicked):
+        """Handle mouse input. Returns 'apply', 'back', or None."""
+        for rect, action in self._click_rects:
+            if rect.collidepoint(pos):
+                if not clicked:
+                    return None  # hover
+                if action == 'back':
+                    self.settings.save()
+                    if self.needs_apply:
+                        return 'apply'
+                    return 'back'
+                elif action.startswith('item_'):
+                    idx = int(action.split('_')[1])
+                    self.selected = idx
+                    self._toggle()
+                elif action == 'left':
+                    self._change(-1)
+                elif action == 'right':
+                    self._change(1)
+                return None
         return None
 
     def _change(self, direction):
@@ -162,6 +185,8 @@ class OptionsScreen:
 
     def draw(self, screen, font, big_font, small_font):
         screen.fill(HULL_BLACK)
+        self._click_rects = []
+        mouse_pos = pygame.mouse.get_pos()
 
         # Title
         title = big_font.render("OPTIONS", True, ADRENALINE)
@@ -173,14 +198,22 @@ class OptionsScreen:
         for i, (item, label) in enumerate(zip(self.items, self.labels)):
             y = y_start + i * row_h
             is_selected = (i == self.selected)
+            is_hover = False
             panel_w = 500
             panel_x = (SCREEN_WIDTH - panel_w) // 2
+            panel_rect = pygame.Rect(panel_x, y, panel_w, row_h - 6)
+
+            if panel_rect.collidepoint(mouse_pos):
+                is_hover = True
+                is_selected = True
+                self.selected = i
 
             # Row bg
             bg_col = CONSOLE if is_selected else BULKHEAD
-            pygame.draw.rect(screen, bg_col, (panel_x, y, panel_w, row_h - 6))
+            pygame.draw.rect(screen, bg_col, panel_rect)
             if is_selected:
-                pygame.draw.rect(screen, ADRENALINE, (panel_x, y, panel_w, row_h - 6), 2)
+                pygame.draw.rect(screen, ADRENALINE, panel_rect, 2)
+            self._click_rects.append((panel_rect, f'item_{i}'))
 
             # Label
             name_col = ON_PRIMARY if is_selected else ON_SECONDARY
@@ -214,20 +247,36 @@ class OptionsScreen:
             val_surf = font.render(val_text, True, val_col)
             screen.blit(val_surf, val_surf.get_rect(right=panel_x + panel_w - 16, centery=y + 16))
 
-            # L/R hint for selected
+            # L/R arrows for selected
             if is_selected:
-                hint = small_font.render("< L/R >", True, WARNING)
-                screen.blit(hint, hint.get_rect(right=panel_x + panel_w - 16, centery=y + 38))
+                left_rect = pygame.Rect(panel_x + panel_w - 60, y + 10, 20, 24)
+                right_rect = pygame.Rect(panel_x + panel_w - 30, y + 10, 20, 24)
+                l_col = ADRENALINE if left_rect.collidepoint(mouse_pos) else ON_SECONDARY
+                r_col = ADRENALINE if right_rect.collidepoint(mouse_pos) else ON_SECONDARY
+                screen.blit(font.render("<", True, l_col), left_rect.topleft)
+                screen.blit(font.render(">", True, r_col), right_rect.topleft)
+                self._click_rects.append((left_rect, 'left'))
+                self._click_rects.append((right_rect, 'right'))
+
+        # Back button
+        back_rect = pygame.Rect(SCREEN_WIDTH // 2 - 60, SCREEN_HEIGHT - 50, 120, 30)
+        back_hover = back_rect.collidepoint(mouse_pos)
+        back_col = ADRENALINE if back_hover else ON_SECONDARY
+        pygame.draw.rect(screen, (20, 24, 28), back_rect)
+        pygame.draw.rect(screen, back_col, back_rect, 2)
+        back_txt = font.render("SAVE & BACK", True, back_col)
+        screen.blit(back_txt, back_txt.get_rect(center=back_rect.center))
+        self._click_rects.append((back_rect, 'back'))
 
         # Apply notice
         if self.needs_apply:
             pulse = (math.sin(self.anim_time * 4) + 1) * 0.5
             col = WARNING if pulse > 0.5 else DANGER
-            notice = font.render("Press ESC to apply changes", True, col)
-            screen.blit(notice, notice.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 56)))
+            notice = font.render("Resolution change requires restart", True, col)
+            screen.blit(notice, notice.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 80)))
 
         # Controls
-        hint = small_font.render("[UP/DOWN] Select  [L/R] Change  [ENTER] Toggle  [ESC] Save & Back", True, ON_SECONDARY)
+        hint = small_font.render("[UP/DOWN] Select  [L/R] Change  [ENTER] Toggle  [ESC] Save & Back  or CLICK", True, ON_SECONDARY)
         screen.blit(hint, hint.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 22)))
 
     def _draw_volume_bar(self, screen, x, y, w, h, pct, active):
