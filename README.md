@@ -47,22 +47,6 @@ python main.py
 **Game Flow** — Menu → Armory (optional) → Briefing → Survive waves + complete objective → Extract → Spend salvage → Repeat.
 
 **Atmosphere** — Procedural sound effects (no audio files), AI-generated splash art, motion tracker radar, low-health vignette, off-screen enemy indicators.
-
-## Project Structure
-
-```
-main.py              # Game loop and state machine
-config.py            # All tuning constants and colors
-generate_sprites.py  # Builds animation frames from base sprite JSON
-terrain/             # Heightfield generation, rendering, rock props
-entities/            # Player, enemies, pickups, sprites, wave director
-combat/              # Weapons, particles, floating text
-game/                # State machine, objectives, biomes, audio, meta-progression
-ui/                  # HUD, menus, motion tracker
-sprites_json/        # 32x32 pixel art sprites as JSON coordinate data
-assets/              # Splash and game-over background images
-```
-
 ## License
 
 MIT
