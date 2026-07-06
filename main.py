@@ -54,6 +54,7 @@ from game.biomes import pick_biome
 from game.audio import AudioSystem
 from game.meta_progression import MetaState
 from game.armory import ArmoryScreen
+from game.options import GameSettings, OptionsScreen
 from ui.hud import HUD
 from ui.menus import MenuRenderer
 
@@ -94,10 +95,15 @@ class Game:
         self.meta = MetaState()
         self.armory = ArmoryScreen()
 
+        # Settings
+        self.settings = GameSettings()
+        self.options = OptionsScreen(self.settings)
+
         # Game state machine
         self.sm = StateMachine()
         self.sm.register_handler(GameState.MENU, self._update_menu)
         self.sm.register_handler(GameState.ARMORY, self._update_armory)
+        self.sm.register_handler(GameState.OPTIONS, self._update_options)
         self.sm.register_handler(GameState.BRIEFING, self._update_briefing)
         self.sm.register_handler(GameState.PLAYING, self._update_playing)
         self.sm.register_handler(GameState.EXTRACTION, self._update_extraction)
@@ -153,10 +159,15 @@ class Game:
 
         # Menu
         self.menu_selected = 0
-        self.menu_options = ["DEPLOY", "ARMORY", "QUIT"]
+        self.menu_options = ["DEPLOY", "ARMORY", "OPTIONS", "QUIT"]
         self.pause_selected = 0
+        self.pause_options = ["RESUME", "RESTART", "OPTIONS", "QUIT TO MENU"]
 
         print("[game] Xeno Breach ready.")
+
+        # Apply saved settings on startup
+        self.audio.master_volume = self.settings.master_volume
+        self.audio.sfx_volume = self.settings.sfx_volume
 
     def run(self):
         running = True
@@ -174,6 +185,12 @@ class Game:
                             running = False
                         elif self.sm.is_armory:
                             self.sm.transition(GameState.MENU)
+                        elif self.sm.is_options:
+                            self.settings.save()
+                            if self.sm.previous_state == GameState.PAUSED:
+                                self.sm.transition(GameState.PAUSED)
+                            else:
+                                self.sm.transition(GameState.MENU)
                         elif self.sm.current_state == GameState.PAUSED:
                             self.sm.transition(GameState.PLAYING)
                         elif self.sm.is_playing or self.sm.is_extraction:
@@ -199,6 +216,9 @@ class Game:
                                 self.audio.play('ui_click')
                                 self.armory.reset()
                                 self.sm.transition(GameState.ARMORY)
+                            elif self.menu_selected == 2:
+                                self.audio.play('ui_click')
+                                self.sm.transition(GameState.OPTIONS)
                             else:
                                 running = False
                     elif self.sm.is_armory:
@@ -208,16 +228,26 @@ class Game:
                             self._start_new_run()
                         elif result == 'back':
                             self.sm.transition(GameState.MENU)
+                    elif self.sm.is_options:
+                        result = self.options.handle_input(event.key)
+                        self.audio.play('ui_click')
+                        if result == 'apply':
+                            self._apply_settings()
+                        elif result == 'back':
+                            if self.sm.previous_state == GameState.PAUSED:
+                                self.sm.transition(GameState.PAUSED)
+                            else:
+                                self.sm.transition(GameState.MENU)
                     elif self.sm.current_state == GameState.BRIEFING:
                         if event.key in (pygame.K_RETURN, pygame.K_SPACE):
                             self.audio.play('ui_click')
                             self.sm.transition(GameState.PLAYING)
                     elif self.sm.current_state == GameState.PAUSED:
                         if event.key in (pygame.K_UP, pygame.K_w):
-                            self.pause_selected = (self.pause_selected - 1) % 3
+                            self.pause_selected = (self.pause_selected - 1) % len(self.pause_options)
                             self.audio.play('ui_click')
                         elif event.key in (pygame.K_DOWN, pygame.K_s):
-                            self.pause_selected = (self.pause_selected + 1) % 3
+                            self.pause_selected = (self.pause_selected + 1) % len(self.pause_options)
                             self.audio.play('ui_click')
                         elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
                             self.audio.play('ui_click')
@@ -225,6 +255,8 @@ class Game:
                                 self.sm.transition(GameState.PLAYING)
                             elif self.pause_selected == 1:  # RESTART
                                 self._start_new_run()
+                            elif self.pause_selected == 2:  # OPTIONS
+                                self.sm.transition(GameState.OPTIONS)
                             else:  # QUIT TO MENU
                                 self.sm.transition(GameState.MENU)
                     elif self.sm.is_playing or self.sm.is_extraction:
@@ -260,6 +292,28 @@ class Game:
 
     def _update_armory(self, dt, game):
         self.armory.update(dt)
+
+    def _update_options(self, dt, game):
+        self.options.update(dt)
+
+    def _apply_settings(self):
+        """Apply changed settings (resolution, fullscreen, volume)."""
+        s = self.settings
+        flags = pygame.FULLSCREEN if s.fullscreen else 0
+        try:
+            self.screen = pygame.display.set_mode((s.width, s.height), flags)
+        except pygame.error:
+            self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), 0)
+            print(f"[settings] Failed to set {s.width}x{s.height}, fell back")
+        # Apply audio volumes
+        self.audio.master_volume = s.master_volume
+        self.audio.sfx_volume = s.sfx_volume
+        s.save()
+        self.options.needs_apply = False
+        if self.sm.previous_state == GameState.PAUSED:
+            self.sm.transition(GameState.PAUSED)
+        else:
+            self.sm.transition(GameState.MENU)
 
     def _update_briefing(self, dt, game):
         pass
@@ -622,13 +676,15 @@ class Game:
                                   self.font, self.menu_selected, self.menu_options)
         elif self.sm.is_armory:
             self.armory.draw(self.screen, self.meta, self.font, self.big_font, self.small_font)
+        elif self.sm.is_options:
+            self.options.draw(self.screen, self.font, self.big_font, self.small_font)
         elif self.sm.current_state == GameState.BRIEFING:
             self.menus.draw_briefing(self.screen, self.big_font, self.med_font,
                                      self.font, self.run_seed, self.biome, self.objective)
         elif self.sm.is_playing or self.sm.is_extraction or self.sm.is_gameover or self.sm.current_state == GameState.PAUSED:
             self._render_gameplay()
             if self.sm.current_state == GameState.PAUSED:
-                self.menus.draw_paused(self.screen, self.big_font, self.font, self.pause_selected)
+                self.menus.draw_paused(self.screen, self.big_font, self.font, self.pause_selected, self.pause_options)
             elif self.sm.is_gameover:
                 stats = [
                     f"WAVES SURVIVED: {self.waves_completed}",

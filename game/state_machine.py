@@ -9,6 +9,7 @@ from enum import Enum
 class GameState(Enum):
     MENU = 'menu'
     ARMORY = 'armory'
+    OPTIONS = 'options'
     BRIEFING = 'briefing'
     PLAYING = 'playing'
     EXTRACTION = 'extraction'
@@ -93,3 +94,7 @@ class StateMachine:
     @property
     def is_armory(self):
         return self.current_state == GameState.ARMORY
+
+    @property
+    def is_options(self):
+        return self.current_state == GameState.OPTIONS

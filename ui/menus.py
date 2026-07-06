@@ -142,15 +142,16 @@ class MenuRenderer:
                     med_font.render("[ SPACE ] DEPLOY", True, col).get_rect(
                         center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100)))
 
-    def draw_paused(self, screen, big_font, font, selected=0):
+    def draw_paused(self, screen, big_font, font, selected=0, options=None):
         """Draw pause overlay with menu options."""
+        if options is None:
+            options = ["RESUME", "RESTART", "QUIT TO MENU"]
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 180))
         screen.blit(overlay, (0, 0))
         screen.blit(big_font.render("PAUSED", True, ON_PRIMARY),
                     big_font.render("PAUSED", True, ON_PRIMARY).get_rect(
                         center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 60)))
-        options = ["RESUME", "RESTART", "QUIT TO MENU"]
         for i, opt in enumerate(options):
             col = ADRENALINE if i == selected else ON_SECONDARY
             txt = font.render(opt, True, col)

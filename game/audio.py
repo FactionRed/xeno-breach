@@ -380,6 +380,9 @@ class AudioSystem:
         # Footstep timer
         self.footstep_timer = 0.0
         self.footstep_interval = 0.35
+        # Volume settings (set by options screen)
+        self.master_volume = 0.7
+        self.sfx_volume = 0.8
 
     def _make_procedural(self, name):
         """Fallback procedural sound generator."""
@@ -397,7 +400,7 @@ class AudioSystem:
             return
         s = self.sfx.get(name)
         if s:
-            s.set_volume(volume)
+            s.set_volume(volume * self.master_volume * self.sfx_volume)
             s.play()
 
     def update(self, dt, enemies_near):
