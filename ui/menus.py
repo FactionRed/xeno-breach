@@ -102,9 +102,9 @@ class MenuRenderer:
 
         # Controls
         controls = [
-            "WASD = MOVE    MOUSE = AIM    LMB = FIRE",
+            "WASD = MOVE    MOUSE = AIM    LEFT CLICK = FIRE",
             "1/2/3 = WEAPONS    R = RELOAD    SHIFT = SPRINT",
-            "M = MUTE    F1 = DEBUG    ESC = PAUSE",
+            "M = MUTE    ESC = PAUSE",
         ]
         for i, c in enumerate(controls):
             txt = font.render(c, True, ON_SECONDARY)
@@ -156,12 +156,15 @@ class MenuRenderer:
                     font.render(objective.description, True, ON_PRIMARY).get_rect(
                         center=(SCREEN_WIDTH // 2, 360)))
 
-        # Deploy prompt
+        # Deploy + back prompt
         pulse = (math.sin(self.title_anim * 3) + 1) * 0.5
         col = ADRENALINE if pulse > 0.5 else ON_PRIMARY
         screen.blit(med_font.render("[ SPACE ] DEPLOY", True, col),
                     med_font.render("[ SPACE ] DEPLOY", True, col).get_rect(
                         center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100)))
+        screen.blit(font.render("[ ESC ] BACK TO MENU", True, ON_SECONDARY),
+                    font.render("[ ESC ] BACK TO MENU", True, ON_SECONDARY).get_rect(
+                        center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 70)))
 
     def draw_paused(self, screen, big_font, font, selected=0, options=None):
         """Draw pause overlay with menu options."""

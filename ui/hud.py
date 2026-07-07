@@ -30,10 +30,15 @@ class HUD:
         self.motion_tracker = MotionTracker()
         self.threat_banner_timer = 0.0
         self.threat_active = False
+        self.tutorial_timer = 8.0  # Show hints for 8 seconds
+        self.tutorial_shown_move = False
+        self.tutorial_shown_fire = False
+        self.tutorial_shown_reload = False
 
     def update(self, dt, player, enemies, terrain):
         """Update motion tracker and threat state."""
         self.motion_tracker.update(dt, player, enemies, terrain)
+        self.tutorial_timer = max(0, self.tutorial_timer - dt)
 
         # Threat banner: active when enemies are very close
         near = sum(1 for e in enemies if not e.dead and
@@ -58,6 +63,7 @@ class HUD:
         self._draw_threat_banner(screen, small_font)
         self._draw_extraction(screen, med_font, font, extraction_beacon, player)
         self._draw_low_health_vignette(screen, player)
+        self._draw_tutorial(screen, small_font, player, combo)
         if combo >= 3:
             self._draw_combo(screen, med_font, combo)
         if enemies:
@@ -300,3 +306,20 @@ class HUD:
             pygame.draw.rect(vignette, (255, 0, 0, alpha),
                             (i * 4, i * 4, SCREEN_WIDTH - i * 8, SCREEN_HEIGHT - i * 8), 4)
         screen.blit(vignette, (0, 0))
+
+    def _draw_tutorial(self, screen, font, player, combo):
+        """Draw transient onboarding hints for new players."""
+        if self.tutorial_timer <= 0:
+            return
+        alpha = min(255, int(255 * min(1.0, self.tutorial_timer / 2.0)))
+        hints = [
+            "WASD to move    MOUSE to aim    LEFT CLICK to fire",
+            "1/2/3 = switch weapons    R = reload    SHIFT = sprint",
+            "Kill enemies to earn salvage    ESC to pause",
+        ]
+        y = SCREEN_HEIGHT // 2 - 60
+        for hint in hints:
+            txt = font.render(hint, True, WARNING)
+            txt.set_alpha(alpha)
+            screen.blit(txt, txt.get_rect(center=(SCREEN_WIDTH // 2, y)))
+            y += 24

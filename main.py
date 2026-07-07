@@ -287,6 +287,9 @@ class Game:
                         if event.key in (pygame.K_RETURN, pygame.K_SPACE):
                             self.audio.play('ui_click')
                             self.sm.transition(GameState.PLAYING)
+                        elif event.key == pygame.K_ESCAPE:
+                            self.audio.play('ui_click')
+                            self.sm.transition(GameState.MENU)
                     elif self.sm.current_state == GameState.PAUSED:
                         if event.key in (pygame.K_UP, pygame.K_w):
                             self.pause_selected = (self.pause_selected - 1) % len(self.pause_options)
