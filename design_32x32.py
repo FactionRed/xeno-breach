@@ -143,7 +143,8 @@ back = [
     "................................",  # 31
 ]
 
-sprite_dir = r"C:\Users\sydne\xeno_shooter\sprites_json"
+sprite_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sprites_json')
+os.makedirs(sprite_dir, exist_ok=True)
 for name, rows in [("front_idle32", front), ("right_idle32", right), ("back_idle32", back)]:
     data = grid_to_json(rows)
     path = os.path.join(sprite_dir, f"{name}.json")
