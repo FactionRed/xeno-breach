@@ -182,6 +182,22 @@ class ArmoryScreen:
                     self.tab = int(action.split('_')[1])
                     self.selected = 0
                     self.loadout_slot = 0
+                elif action.startswith('upgrade_'):
+                    idx = int(action.split('_')[1])
+                    self.selected = idx
+                    self._try_purchase_upgrade(meta)
+                elif action.startswith('loadout_left_'):
+                    slot = int(action.split('_')[2])
+                    self.loadout_slot = slot
+                    unlocked = meta.unlocked_weapons
+                    idx = self.loadout_edit[slot]
+                    self.loadout_edit[slot] = (idx - 1) % len(unlocked)
+                elif action.startswith('loadout_right_'):
+                    slot = int(action.split('_')[2])
+                    self.loadout_slot = slot
+                    unlocked = meta.unlocked_weapons
+                    idx = self.loadout_edit[slot]
+                    self.loadout_edit[slot] = (idx + 1) % len(unlocked)
                 return None
         return None
 
@@ -278,6 +294,7 @@ class ArmoryScreen:
         detail_w = SCREEN_WIDTH - detail_x - 40
         y_start = 132
         row_h = 52
+        mouse_pos = pygame.mouse.get_pos()
 
         # Upgrade list (left)
         for i, key in enumerate(UPGRADE_ORDER):
@@ -288,10 +305,17 @@ class ArmoryScreen:
             can_buy = meta.can_purchase(key)
 
             y = y_start + i * row_h
+            row_rect = pygame.Rect(list_x, y, list_w, row_h - 4)
+            # Hover detection
+            if row_rect.collidepoint(mouse_pos):
+                is_selected = True
+                self.selected = i
             bg_col = CONSOLE if is_selected else BULKHEAD
-            pygame.draw.rect(screen, bg_col, (list_x, y, list_w, row_h - 4))
+            pygame.draw.rect(screen, bg_col, row_rect)
             if is_selected:
-                pygame.draw.rect(screen, ADRENALINE, (list_x, y, list_w, row_h - 4), 2)
+                pygame.draw.rect(screen, ADRENALINE, row_rect, 2)
+            # Click target — clicking a row selects + purchases
+            self._click_rects.append((row_rect, f'upgrade_{i}'))
 
             # Name + tier level
             name_col = ON_PRIMARY if is_selected else ON_SECONDARY
@@ -382,6 +406,7 @@ class ArmoryScreen:
     def _draw_weapons_tab(self, screen, meta, font, small_font):
         unlocked = meta.unlocked_weapons
         current_loadout = meta.get_loadout()
+        mouse_pos = pygame.mouse.get_pos()
 
         if not self._loadout_synced:
             for i in range(3):
@@ -500,7 +525,11 @@ class ArmoryScreen:
         for i in range(3):
             sx = list_x + i * (slot_w + 8)
             sy2 = loadout_y + 24
+            slot_rect = pygame.Rect(sx, sy2, slot_w, 56)
             is_editing = (i == self.loadout_slot)
+            if slot_rect.collidepoint(mouse_pos):
+                is_editing = True
+                self.loadout_slot = i
             idx = self.loadout_edit[i] % len(unlocked)
             wname = unlocked[idx]
             info2 = WEAPON_INFO.get(wname, {})
@@ -508,20 +537,25 @@ class ArmoryScreen:
 
             col_bg = CONSOLE if is_editing else BULKHEAD
             border_col = ADRENALINE if is_editing else ON_SECONDARY
-            pygame.draw.rect(screen, col_bg, (sx, sy2, slot_w, 56))
-            pygame.draw.rect(screen, border_col, (sx, sy2, slot_w, 56), 2)
+            pygame.draw.rect(screen, col_bg, slot_rect)
+            pygame.draw.rect(screen, border_col, slot_rect, 2)
 
             # Slot number
             screen.blit(small_font.render(f"SLOT {i+1}", True, ON_SECONDARY), (sx + 8, sy2 + 4))
             # Weapon name
-            screen.blit(font.render(info2.get('name', short), True, ON_PRIMARY), (sx + 8, sy2 + 22))
+            screen.blit(font.render(info2.get('name', short), True, ON_PRIMARY), (sx + 8, sy2 + 24))
             # Icon
             ic = WEAPON_ICON_COLORS.get(wname, ON_SECONDARY)
             pygame.draw.rect(screen, ic, (sx + slot_w - 28, sy2 + 8, 18, 18))
             pygame.draw.rect(screen, ON_PRIMARY, (sx + slot_w - 28, sy2 + 8, 18, 18), 1)
 
             if is_editing:
-                screen.blit(small_font.render("< L/R >", True, WARNING), (sx + 8, sy2 + 42))
+                screen.blit(small_font.render("< click >", True, WARNING), (sx + 8, sy2 + 42))
+            # Click targets for cycling
+            left_r = pygame.Rect(sx, sy2, slot_w // 2, 56)
+            right_r = pygame.Rect(sx + slot_w // 2, sy2, slot_w // 2, 56)
+            self._click_rects.append((left_r, f'loadout_left_{i}'))
+            self._click_rects.append((right_r, f'loadout_right_{i}'))
 
     def _draw_stat_bar(self, screen, font, label, x, y, w, pct, active):
         """Draw a labeled stat bar (0.0 to 1.0)."""
