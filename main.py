@@ -768,13 +768,16 @@ class Game:
         # Fire zones
         self.projectiles.draw(self.screen, cam_x, cam_y)
 
-        # Xenomorph sprites
+        # Enemy sprites (or custom renderers like the Stalker spider)
         for e in self.wave_director.enemies:
-            sprite = self.xeno_sprites.get(id(e))
-            if sprite:
-                sprite.draw(self.screen, e, cam_x, cam_y)
-            else:
+            if getattr(e, 'custom_renderer', False):
                 e.draw(self.screen, cam_x, cam_y)
+            else:
+                sprite = self.xeno_sprites.get(id(e))
+                if sprite:
+                    sprite.draw(self.screen, e, cam_x, cam_y)
+                else:
+                    e.draw(self.screen, cam_x, cam_y)
 
         # Player sprite
         self.player_sprite.draw(self.screen, self.player, cam_x, cam_y)

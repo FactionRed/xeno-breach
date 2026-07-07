@@ -3,6 +3,7 @@
 Wave composition scales with wave number:
   Wave 1-3:   Drones only
   Wave 4-6:   Drones + Runners
+  Wave 5+:    + Stalkers (spider enemies)
   Wave 7-9:   Drones + Runners + Spitters
   Wave 10+:   All types + Brutes
   Every 5th wave: Heavier mix
@@ -13,6 +14,7 @@ import time
 import numpy as np
 
 from entities.enemy_types import create_enemy
+from entities.enemy_spider import StalkerEnemy
 from entities.enemy_mods import maybe_roll_elite
 from config import WORLD_W, WORLD_H, TERRAIN_SCALE
 
@@ -132,8 +134,12 @@ class WaveDirector:
 
         hp_mult = 1.0 + 0.08 * self.wave_number
         spd_mult = 1.0 + 0.04 * self.wave_number
-        enemy = create_enemy(enemy_type, best[0], best[1],
-                            hp_mult=hp_mult, speed_mult=spd_mult)
+
+        if enemy_type == 'stalker':
+            enemy = StalkerEnemy(best[0], best[1], hp_mult=hp_mult, speed_mult=spd_mult)
+        else:
+            enemy = create_enemy(enemy_type, best[0], best[1],
+                                hp_mult=hp_mult, speed_mult=spd_mult)
 
         # Roll for elite (5% chance)
         maybe_roll_elite(enemy, chance=0.05)
@@ -143,11 +149,12 @@ class WaveDirector:
     def _pick_enemy_type(self):
         """Determine enemy type based on wave number."""
         w = self.wave_number
-        # Build weighted pool based on wave progression
         pool = ['drone'] * 10  # base weight
 
         if w >= 4:
             pool += ['runner'] * min(4, w - 3)
+        if w >= 5:
+            pool += ['stalker'] * min(3, w - 4)
         if w >= 7:
             pool += ['spitter'] * min(3, w - 6)
         if w >= 10:
@@ -157,6 +164,7 @@ class WaveDirector:
         if w % 5 == 0:
             pool += ['runner'] * 3
             pool += ['brute'] * 2
+            pool += ['stalker'] * 2
 
         return random.choice(pool)
 

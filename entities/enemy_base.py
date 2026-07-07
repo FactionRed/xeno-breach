@@ -201,6 +201,9 @@ class Enemy:
     # Type identifier for spawner/sprites
     enemy_type = 'drone'
 
+    # If True, the enemy has its own draw() method — skip EnemySprite rendering
+    custom_renderer = False
+
     def __init__(self, x, y, hp=40, speed=90, hp_mult=1.0, speed_mult=1.0):
         self.x = float(x)
         self.y = float(y)
