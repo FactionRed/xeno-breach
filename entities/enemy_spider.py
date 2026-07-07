@@ -35,8 +35,7 @@ class RearState(EnemyState):
     """Stop and rear up — telegraph the lunge."""
     def enter(self, enemy, player, terrain):
         enemy.rear_timer = 0.0
-        enemy.lunge_dir = math.atan2(player.y - enemy.y, player.x - enemy.x)
-        enemy.facing = enemy.lunge_dir
+        # lunge_dir and facing already set by _check_transitions before transition
 
     def update(self, dt, enemy, player, terrain, enemies):
         enemy.rear_timer += dt
@@ -49,8 +48,7 @@ class LungeState(EnemyState):
     """Burst toward player at high speed."""
     def enter(self, enemy, player, terrain):
         enemy.lunge_timer = 0.0
-        enemy.lunge_dir = math.atan2(player.y - enemy.y, player.x - enemy.x)
-        enemy.facing = enemy.lunge_dir
+        # lunge_dir already set during rear state
         enemy.has_lunged_hit = False
 
     def update(self, dt, enemy, player, terrain, enemies):
@@ -123,9 +121,15 @@ class StalkerEnemy(Enemy):
             dy = player.y - self.y
             dist = math.sqrt(dx * dx + dy * dy)
             if dist <= self.lunge_range:
+                # Store player direction before transitioning (enter() gets None)
+                self.lunge_dir = math.atan2(dy, dx)
+                self.facing = self.lunge_dir
                 self._transition('rear')
         elif self.state == 'rear':
             if self.rear_timer >= 0.4:
+                # Refresh lunge direction with current player position
+                self.lunge_dir = math.atan2(player.y - self.y, player.x - self.x)
+                self.facing = self.lunge_dir
                 self._transition('lunge')
         elif self.state == 'lunge':
             if self.lunge_timer >= 0.3:
