@@ -238,11 +238,14 @@ class ArmoryScreen:
         # Salvage
         salvage_text = font.render(f"Salvage: {meta.salvage}", True, WARNING)
         screen.blit(salvage_text, salvage_text.get_rect(center=(SCREEN_WIDTH // 2, 94)))
+        # Explanation tooltip
+        salvage_hint = small_font.render("Earned by killing enemies and completing extractions", True, ON_SECONDARY)
+        screen.blit(salvage_hint, salvage_hint.get_rect(center=(SCREEN_WIDTH // 2, 110)))
 
         # Stats
         stats = f"Runs: {meta.total_runs}  |  Kills: {meta.total_kills}  |  Best Wave: {meta.best_wave}"
         stats_text = small_font.render(stats, True, ON_SECONDARY)
-        screen.blit(stats_text, stats_text.get_rect(center=(SCREEN_WIDTH // 2, 112)))
+        screen.blit(stats_text, stats_text.get_rect(center=(SCREEN_WIDTH // 2, 126)))
 
         if self.tab == 0:
             self._draw_upgrades_tab(screen, meta, font, small_font)
