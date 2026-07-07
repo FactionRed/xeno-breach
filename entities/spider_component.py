@@ -50,14 +50,15 @@ class SpiderLeg:
 
         if not self.stepping and can_step:
             dist = (self.ground_pos - ideal_pos).length()
-            if dist > 35:
+            if dist > 28:
                 self.stepping = True
                 self.step_t = 0.0
                 self.step_from = self.ground_pos.copy()
-                self.step_to = ideal_pos + move_dir * 25
+                # Longer stride: step further ahead in the movement direction
+                self.step_to = ideal_pos + move_dir * 45
 
         if self.stepping:
-            self.step_t += dt * 7.0
+            self.step_t += dt * 3.5  # slower, more deliberate steps
             if self.step_t >= 1.0:
                 self.step_t = 1.0
                 self.stepping = False
@@ -65,7 +66,7 @@ class SpiderLeg:
             else:
                 t = self.step_t
                 forward = self.step_from.lerp(self.step_to, t)
-                lift = math.sin(t * math.pi) * 20
+                lift = math.sin(t * math.pi) * 18
                 self.ground_pos = Vector2(forward.x, forward.y - lift)
 
         self.foot_dyn.update(dt, self.ground_pos)
@@ -164,9 +165,9 @@ class SpiderComponent:
         self.tilt_dyn.update(dt, tilt)
         self.body_tilt = self.tilt_dyn.y
 
-        # Alternating gait: switch which group can step every 0.3s
+        # Alternating gait: switch which group can step after previous group finishes
         self.gait_timer += dt
-        if self.gait_timer > 0.3:
+        if self.gait_timer > 0.15:
             # Check if current group is done stepping
             group_stepping = any(l.stepping and l.group == self.step_group for l in self.legs)
             if not group_stepping:
