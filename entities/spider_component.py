@@ -26,7 +26,7 @@ HEAD_COLOR = (60, 20, 80)
 class SpiderLeg:
     """One leg with 2-segment IK and second-order foot dynamics."""
 
-    def __init__(self, body_offset, seg_lengths, ground_pos):
+    def __init__(self, body_offset, seg_lengths, ground_pos, group=0):
         self.body_offset = Vector2(body_offset)     # offset from body center
         self.seg1_len = seg_lengths[0]               # upper leg
         self.seg2_len = seg_lengths[1]               # lower leg
@@ -35,27 +35,29 @@ class SpiderLeg:
         self.step_t = 0.0
         self.step_from = Vector2(0, 0)
         self.step_to = Vector2(0, 0)
+        self.group = group  # 0 = group A, 1 = group B (for alternating gait)
 
         # Second-order dynamics for foot position
         self.foot_dyn = SecondOrderDynamics(f=8.0, z=0.8, r=1.0, x0=Vector2(ground_pos))
 
-    def update(self, dt, body_pos, body_angle, move_dir, speed):
-        """Update leg: check if it needs to step, then step."""
+    def update(self, dt, body_pos, body_angle, move_dir, speed, can_step):
+        """Update leg. can_step=True only for the group that's allowed to step this cycle."""
         facing = Vector2(math.cos(body_angle), math.sin(body_angle))
         perp = Vector2(-facing.y, facing.x)
         offset_world = facing * self.body_offset.x + perp * self.body_offset.y
-        ideal_pos = body_pos + offset_world + facing * self.seg1_len * 0.8
+        # Rest position is further out — legs should reach away from body
+        ideal_pos = body_pos + offset_world + facing * self.seg1_len * 0.5
 
-        if not self.stepping:
+        if not self.stepping and can_step:
             dist = (self.ground_pos - ideal_pos).length()
-            if dist > 40:
+            if dist > 35:
                 self.stepping = True
                 self.step_t = 0.0
                 self.step_from = self.ground_pos.copy()
-                self.step_to = ideal_pos + move_dir * 20
+                self.step_to = ideal_pos + move_dir * 25
 
         if self.stepping:
-            self.step_t += dt * 6.0
+            self.step_t += dt * 7.0
             if self.step_t >= 1.0:
                 self.step_t = 1.0
                 self.stepping = False
@@ -63,7 +65,7 @@ class SpiderLeg:
             else:
                 t = self.step_t
                 forward = self.step_from.lerp(self.step_to, t)
-                lift = math.sin(t * math.pi) * 25
+                lift = math.sin(t * math.pi) * 20
                 self.ground_pos = Vector2(forward.x, forward.y - lift)
 
         self.foot_dyn.update(dt, self.ground_pos)
@@ -126,18 +128,30 @@ class SpiderComponent:
         self.angle_dyn = SecondOrderDynamics(f=6.0, z=1.0, r=0.0, x0=0.0)
         self.tilt_dyn = SecondOrderDynamics(f=5.0, z=0.3, r=0.5, x0=0.0)
 
-        # 8 legs: 4 left, 4 right
+        # 8 legs: 4 left, 4 right — alternating groups for tetrapod gait
+        # Group A: legs 0,2,5,7 (front-left, mid-front-left, mid-back-right, back-right)
+        # Group B: legs 1,3,4,6 (front-right, mid-front-right, mid-back-left, back-left)
+        # Leg config: (body_offset_x, body_offset_y, seg1_len, seg2_len, group)
         leg_cfg = [
-            (-12, -8, 28, 32), (-12, 8, 28, 32),
-            (-4, -12, 30, 34), (-4, 12, 30, 34),
-            (6, -12, 30, 34), (6, 12, 30, 34),
-            (14, -8, 28, 32), (14, 8, 28, 32),
+            (-14, -10, 38, 42, 0),   # front-left (group A)
+            (-14, 10, 38, 42, 1),    # front-right (group B)
+            (-5, -14, 42, 46, 0),    # mid-front-left (group A)
+            (-5, 14, 42, 46, 1),     # mid-front-right (group B)
+            (5, -14, 42, 46, 1),     # mid-back-left (group B)
+            (5, 14, 42, 46, 0),      # mid-back-right (group A)
+            (14, -10, 38, 42, 0),    # back-left (group A)
+            (14, 10, 38, 42, 1),     # back-right (group B)
         ]
         self.legs = []
-        for ox, oy, s1, s2 in leg_cfg:
+        for ox, oy, s1, s2, group in leg_cfg:
             offset = Vector2(ox, oy)
-            ground = pos + Vector2(ox + 30 if ox >= 0 else ox - 30, oy * 3)
-            self.legs.append(SpiderLeg(offset, (s1, s2), ground))
+            # Start feet spread far from body
+            ground = pos + Vector2(ox * 3 + (40 if ox >= 0 else -40), oy * 4)
+            self.legs.append(SpiderLeg(offset, (s1, s2), ground, group=group))
+
+        # Gait alternation
+        self.step_group = 0  # which group is allowed to step (0 or 1)
+        self.gait_timer = 0.0
 
     def update(self, dt, world_pos, angle, tilt=0.0):
         """Update spider body + legs. world_pos and angle are the target."""
@@ -150,12 +164,22 @@ class SpiderComponent:
         self.tilt_dyn.update(dt, tilt)
         self.body_tilt = self.tilt_dyn.y
 
+        # Alternating gait: switch which group can step every 0.3s
+        self.gait_timer += dt
+        if self.gait_timer > 0.3:
+            # Check if current group is done stepping
+            group_stepping = any(l.stepping and l.group == self.step_group for l in self.legs)
+            if not group_stepping:
+                self.step_group = 1 - self.step_group
+                self.gait_timer = 0.0
+
         # Compute move direction for leg stepping
         facing = Vector2(math.cos(self.angle), math.sin(self.angle))
-        move_dir = facing  # legs step in facing direction
+        move_dir = facing
 
         for leg in self.legs:
-            leg.update(dt, self.pos, self.angle, move_dir, 1.0)
+            can_step = (leg.group == self.step_group)
+            leg.update(dt, self.pos, self.angle, move_dir, 1.0, can_step)
 
     def draw(self, screen, cam_x, cam_y):
         sx = self.pos.x - cam_x
