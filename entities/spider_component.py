@@ -129,30 +129,37 @@ class SpiderComponent:
         self.angle_dyn = SecondOrderDynamics(f=6.0, z=1.0, r=0.0, x0=0.0)
         self.tilt_dyn = SecondOrderDynamics(f=5.0, z=0.3, r=0.5, x0=0.0)
 
-        # 8 legs: 4 left, 4 right — alternating groups for tetrapod gait
-        # Group A: legs 0,2,5,7 (front-left, mid-front-left, mid-back-right, back-right)
-        # Group B: legs 1,3,4,6 (front-right, mid-front-right, mid-back-left, back-left)
+        # 8 legs arranged as: front-left, front-right, mid-front-left, mid-front-right,
+        #                     mid-back-left, mid-back-right, back-left, back-right
+        # Real spider gait = alternating tetrapod with DIAGONAL pairs:
+        #   Group A: L1, L3, R2, R4 (front-left, mid-back-left, mid-front-right, back-right)
+        #   Group B: R1, R3, L2, L4 (front-right, mid-back-right, mid-front-left, back-left)
         # Leg config: (body_offset_x, body_offset_y, seg1_len, seg2_len, group)
+        # offset_y: negative = left side, positive = right side
+        # offset_x: negative = front, positive = back
         leg_cfg = [
-            (-14, -10, 38, 42, 0),   # front-left (group A)
-            (-14, 10, 38, 42, 1),    # front-right (group B)
-            (-5, -14, 42, 46, 0),    # mid-front-left (group A)
-            (-5, 14, 42, 46, 1),     # mid-front-right (group B)
-            (5, -14, 42, 46, 1),     # mid-back-left (group B)
-            (5, 14, 42, 46, 0),      # mid-back-right (group A)
-            (14, -10, 38, 42, 0),    # back-left (group A)
-            (14, 10, 38, 42, 1),     # back-right (group B)
+            (-16, -11, 40, 44, 0),   # 0: front-left  (L1, group A)
+            (-16, 11, 40, 44, 1),    # 1: front-right (R1, group B)
+            (-5, -15, 44, 48, 1),    # 2: mid-front-left  (L2, group B)
+            (-5, 15, 44, 48, 0),     # 3: mid-front-right (R2, group A)
+            (5, -15, 44, 48, 0),     # 4: mid-back-left   (L3, group A)
+            (5, 15, 44, 48, 1),      # 5: mid-back-right  (R3, group B)
+            (16, -11, 40, 44, 1),    # 6: back-left   (L4, group B)
+            (16, 11, 40, 44, 0),     # 7: back-right  (R4, group A)
         ]
         self.legs = []
         for ox, oy, s1, s2, group in leg_cfg:
             offset = Vector2(ox, oy)
-            # Start feet spread far from body
-            ground = pos + Vector2(ox * 3 + (40 if ox >= 0 else -40), oy * 4)
+            # Start feet spread far from body, roughly in their rest direction
+            dir_x = ox * 2.5 + (-50 if ox < 0 else 50)
+            dir_y = oy * 3.5
+            ground = pos + Vector2(dir_x, dir_y)
             self.legs.append(SpiderLeg(offset, (s1, s2), ground, group=group))
 
         # Gait alternation
         self.step_group = 0  # which group is allowed to step (0 or 1)
         self.gait_timer = 0.0
+        self.bob_offset = 0.0
 
     def update(self, dt, world_pos, angle, tilt=0.0):
         """Update spider body + legs. world_pos and angle are the target."""
@@ -165,14 +172,20 @@ class SpiderComponent:
         self.tilt_dyn.update(dt, tilt)
         self.body_tilt = self.tilt_dyn.y
 
-        # Alternating gait: switch which group can step after previous group finishes
+        # Alternating gait: switch groups when current group finishes stepping
         self.gait_timer += dt
-        if self.gait_timer > 0.15:
-            # Check if current group is done stepping
+        if self.gait_timer > 0.12:
             group_stepping = any(l.stepping and l.group == self.step_group for l in self.legs)
             if not group_stepping:
                 self.step_group = 1 - self.step_group
                 self.gait_timer = 0.0
+
+        # Subtle body bob synchronized with gait (real spiders bob with each step)
+        any_stepping = any(l.stepping for l in self.legs)
+        if any_stepping:
+            self.bob_offset = -2.0  # body lifts slightly when legs are stepping
+        else:
+            self.bob_offset = 0.0
 
         # Compute move direction for leg stepping
         facing = Vector2(math.cos(self.angle), math.sin(self.angle))
@@ -184,7 +197,7 @@ class SpiderComponent:
 
     def draw(self, screen, cam_x, cam_y):
         sx = self.pos.x - cam_x
-        sy = self.pos.y - cam_y
+        sy = self.pos.y - cam_y + self.bob_offset  # subtle vertical bob
 
         # Draw legs first (behind body)
         for leg in self.legs:
