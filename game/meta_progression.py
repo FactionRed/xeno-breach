@@ -108,20 +108,34 @@ UPGRADE_ORDER = ['health', 'regen', 'ammo', 'fire_rate',
                  'acid_resist', 'scanner', 'speed', 'scavenger']
 
 
+# ============ PERSISTED SAVE SCHEMA ============
+
+# Single source of truth for persisted MetaState fields.
+# (field_name, default_factory). To add a persisted field, add ONE entry here
+# and it flows automatically into __init__, _load(), and save(). Factories keep
+# mutable defaults (dict/list) from being shared across instances.
+# NOTE: 'upgrades' is special-cased in _load() so tiers key off UPGRADES.
+# tests/test_meta_save.py::test_schema_and_save_agree guards against drift.
+META_SCHEMA = [
+    ('salvage',           lambda: 0),
+    ('upgrades',          lambda: {k: 0 for k in UPGRADES}),
+    ('total_kills',       lambda: 0),
+    ('total_runs',        lambda: 0),
+    ('total_extractions', lambda: 0),
+    ('best_wave',         lambda: 0),
+    ('unlocked_weapons',  lambda: ['pulse_rifle', 'shotgun', 'flamethrower']),
+    ('loadout',           lambda: ['pulse_rifle', 'shotgun', 'flamethrower']),
+]
+
+
 # ============ META STATE ============
 
 class MetaState:
     """Persistent player progression state across runs."""
 
     def __init__(self):
-        self.salvage = 0
-        self.upgrades: Dict[str, int] = {k: 0 for k in UPGRADES}
-        self.total_kills = 0
-        self.total_runs = 0
-        self.total_extractions = 0
-        self.best_wave = 0
-        self.unlocked_weapons = ['pulse_rifle', 'shotgun', 'flamethrower']
-        self.loadout = ['pulse_rifle', 'shotgun', 'flamethrower']
+        for name, factory in META_SCHEMA:
+            setattr(self, name, factory())
         self.save_version = SAVE_VERSION
         self._load()
 
@@ -165,15 +179,14 @@ class MetaState:
         version = data.get('save_version', 1)
         data = self._migrate(data, version)
 
-        # Load fields (all use .get with defaults for forward compat)
-        self.salvage = data.get('salvage', 0)
-        self.upgrades = {k: data.get('upgrades', {}).get(k, 0) for k in UPGRADES}
-        self.total_kills = data.get('total_kills', 0)
-        self.total_runs = data.get('total_runs', 0)
-        self.total_extractions = data.get('total_extractions', 0)
-        self.best_wave = data.get('best_wave', 0)
-        self.unlocked_weapons = data.get('unlocked_weapons', ['pulse_rifle', 'shotgun', 'flamethrower'])
-        self.loadout = data.get('loadout', ['pulse_rifle', 'shotgun', 'flamethrower'])
+        # Load fields from schema (all use .get with factory default for
+        # forward compat). 'upgrades' is special-cased so tiers key off UPGRADES.
+        for name, factory in META_SCHEMA:
+            if name == 'upgrades':
+                saved = data.get('upgrades', {})
+                self.upgrades = {k: saved.get(k, 0) for k in UPGRADES}
+            else:
+                setattr(self, name, data.get(name, factory()))
 
     def _migrate(self, data, version):
         """Run migrations to bring save data up to current version."""
@@ -204,17 +217,9 @@ class MetaState:
         return data
 
     def save(self):
-        data = {
-            'save_version': SAVE_VERSION,
-            'salvage': self.salvage,
-            'upgrades': self.upgrades,
-            'total_kills': self.total_kills,
-            'total_runs': self.total_runs,
-            'total_extractions': self.total_extractions,
-            'best_wave': self.best_wave,
-            'unlocked_weapons': self.unlocked_weapons,
-            'loadout': self.loadout,
-        }
+        data = {'save_version': SAVE_VERSION}
+        for name, _ in META_SCHEMA:
+            data[name] = getattr(self, name)
         with open(self._save_path(), 'w') as f:
             json.dump(data, f, indent=2)
 
