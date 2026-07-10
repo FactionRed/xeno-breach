@@ -82,3 +82,16 @@ def test_v2_save_migrates(tmp_path, monkeypatch):
     assert m.salvage == 50
     assert m.get_tier('health') == 1
     assert m.unlocked_weapons == ['pulse_rifle', 'shotgun', 'flamethrower']
+
+
+def test_schema_and_save_agree(tmp_path, monkeypatch):
+    """Drift guard: every META_SCHEMA field must land in save() output and
+    vice-versa. Fails if a field is added to the schema but forgotten in
+    save(), or an orphan key is written that the schema doesn't declare."""
+    m = _fresh(tmp_path, monkeypatch)
+    m.save()
+    with open(_save_file(tmp_path)) as f:
+        data = json.load(f)
+    schema_fields = {name for name, _ in mp.META_SCHEMA}
+    saved_fields = set(data) - {'save_version'}
+    assert schema_fields == saved_fields
