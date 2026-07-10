@@ -59,25 +59,33 @@ class Weapon:
         return self.ammo / self.mag_size
 
 
-# Weapon definitions (from IMPLEMENTATION_PLAN.md)
-WEAPON_STATS = {
-    'pulse_rifle': {
-        'damage': 22, 'fire_rate': 100, 'mag_size': 30,
-        'range': 800, 'spread': 2.0, 'pellets': 1,
-        'tracer_color': [255, 180, 84],
-        'muzzle_flash': True,
-        'reload_time': 1.5,
-    },
+# Weapon definitions (from IMPLEMENTATION_PLAN.md).
+# Schema-driven (DDL "copies + override" pattern): weapons inherit from
+# WEAPON_BASE and list ONLY the fields that differ. WEAPON_STATS is resolved
+# at import into the same flat dict shape consumers expect. To add/change a
+# stat, edit WEAPON_BASE (affects all) or a single weapon's override.
+# tests/test_weapons_schema.py holds the golden resolved values.
+WEAPON_BASE = {
+    'damage': 22, 'fire_rate': 100, 'mag_size': 30,
+    'range': 800, 'spread': 2.0, 'pellets': 1,
+    'tracer_color': [255, 180, 84],
+    'muzzle_flash': True,
+    'reload_time': 1.5,
+}
+
+# Only fields that DIFFER from WEAPON_BASE. Keys absent from base
+# (area_denial, pierce) are override-only and read via stats.get(...).
+_WEAPON_OVERRIDES = {
+    'pulse_rifle': {},
     'shotgun': {
         'damage': 14, 'fire_rate': 550, 'mag_size': 8,
         'range': 450, 'spread': 11, 'pellets': 6,
         'tracer_color': [255, 65, 54],
-        'muzzle_flash': True,
         'reload_time': 2.0,
     },
     'flamethrower': {
         'damage': 10, 'fire_rate': 70, 'mag_size': 100,
-        'range': 320, 'spread': 22, 'pellets': 1,
+        'range': 320, 'spread': 22,
         'tracer_color': [255, 120, 40],
         'muzzle_flash': False,
         'area_denial': True,
@@ -85,20 +93,31 @@ WEAPON_STATS = {
     },
     'smg': {
         'damage': 8, 'fire_rate': 50, 'mag_size': 50,
-        'range': 500, 'spread': 4.0, 'pellets': 1,
+        'range': 500, 'spread': 4.0,
         'tracer_color': [120, 255, 120],
-        'muzzle_flash': True,
         'reload_time': 1.8,
     },
     'railgun': {
         'damage': 80, 'fire_rate': 800, 'mag_size': 5,
-        'range': 1200, 'spread': 0.5, 'pellets': 1,
+        'range': 1200, 'spread': 0.5,
         'tracer_color': [0, 217, 255],
-        'muzzle_flash': True,
         'pierce': True,
         'reload_time': 3.0,
     },
 }
+
+
+def _resolve_weapons(base, overrides):
+    """Merge each override onto a fresh copy of base -> flat stats dict."""
+    resolved = {}
+    for name, override in overrides.items():
+        merged = dict(base)
+        merged.update(override)
+        resolved[name] = merged
+    return resolved
+
+
+WEAPON_STATS = _resolve_weapons(WEAPON_BASE, _WEAPON_OVERRIDES)
 
 # All weapons available in the game
 WEAPON_ORDER = ['pulse_rifle', 'shotgun', 'flamethrower', 'smg', 'railgun']
