@@ -1,6 +1,8 @@
 # Xeno Breach
 
-A top-down survival shooter where you fight waves of alien creatures on procedurally generated rocky planets. Built with Python and pygame-ce.
+A top-down survival shooter where you fight waves of alien creatures on procedurally generated rocky planets. Built with Python and pygame-ce. 
+
+All visual assets are placeholders.
 
 ## Install
 
