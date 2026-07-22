@@ -45,20 +45,20 @@ class SpiderLeg:
         facing = Vector2(math.cos(body_angle), math.sin(body_angle))
         perp = Vector2(-facing.y, facing.x)
         offset_world = facing * self.body_offset.x + perp * self.body_offset.y
-        # Rest position is further out — legs should reach away from body
-        ideal_pos = body_pos + offset_world + facing * self.seg1_len * 0.5
+        # Rest position reaches out from the body
+        ideal_pos = body_pos + offset_world + facing * self.seg1_len * 0.3
 
         if not self.stepping and can_step:
             dist = (self.ground_pos - ideal_pos).length()
-            if dist > 28:
+            if dist > 20:  # step sooner — more frequent steps
                 self.stepping = True
                 self.step_t = 0.0
                 self.step_from = self.ground_pos.copy()
-                # Longer stride: step further ahead in the movement direction
-                self.step_to = ideal_pos + move_dir * 45
+                # Big stride: step far ahead in movement direction
+                self.step_to = ideal_pos + move_dir * 60
 
         if self.stepping:
-            self.step_t += dt * 3.5  # slower, more deliberate steps
+            self.step_t += dt * 4.0  # moderate step speed
             if self.step_t >= 1.0:
                 self.step_t = 1.0
                 self.stepping = False
@@ -66,7 +66,8 @@ class SpiderLeg:
             else:
                 t = self.step_t
                 forward = self.step_from.lerp(self.step_to, t)
-                lift = math.sin(t * math.pi) * 18
+                # High lift arc — make steps clearly visible
+                lift = math.sin(t * math.pi) * 30
                 self.ground_pos = Vector2(forward.x, forward.y - lift)
 
         self.foot_dyn.update(dt, self.ground_pos)
@@ -107,12 +108,12 @@ class SpiderLeg:
         h = (int(hip.x - cam_x), int(hip.y - cam_y))
         k = (int(knee.x - cam_x), int(knee.y - cam_y))
         f = (int(foot.x - cam_x), int(foot.y - cam_y))
-        pygame.draw.line(screen, LEG_COLOR, h, k, 4)
-        pygame.draw.line(screen, LEG_COLOR, k, f, 3)
-        pygame.draw.circle(screen, LEG_JOINT, h, 3)
-        pygame.draw.circle(screen, LEG_JOINT, k, 2)
-        pygame.draw.circle(screen, FOOT_COLOR, f, 4)
-        pygame.draw.circle(screen, (255, 200, 255), f, 2)
+        pygame.draw.line(screen, LEG_COLOR, h, k, 5)
+        pygame.draw.line(screen, LEG_COLOR, k, f, 4)
+        pygame.draw.circle(screen, LEG_JOINT, h, 4)
+        pygame.draw.circle(screen, LEG_JOINT, k, 3)
+        pygame.draw.circle(screen, FOOT_COLOR, f, 5)
+        pygame.draw.circle(screen, (255, 200, 255), f, 3)
 
 
 class SpiderComponent:
@@ -183,7 +184,7 @@ class SpiderComponent:
         # Subtle body bob synchronized with gait (real spiders bob with each step)
         any_stepping = any(l.stepping for l in self.legs)
         if any_stepping:
-            self.bob_offset = -2.0  # body lifts slightly when legs are stepping
+            self.bob_offset = -4.0  # more visible body bob
         else:
             self.bob_offset = 0.0
 

@@ -570,11 +570,168 @@ for _dir, _states in _DIR_MAP.items():
             _validate(_grid, f"{_dir}/{_state}[{_i}]")
 
 
+# ============ PixelLab spritesheet pipeline ============
+# Game directions map to compass-named sheet files exported from PixelLab.
+# Each entry: game state -> sheet name fragment. Only sheets that exist are
+# used; missing ones fall through to the legacy loaders. When new state
+# sheets are generated on PixelLab (idle/shoot/hurt/dead), drop them in
+# assets/sprites/ with the same naming pattern and they are picked up
+# automatically — no code changes needed.
+_SHEET_DIRECTION = {
+    'front': 'South',
+    'back':  'North',
+    'left':  'West',
+    'right': 'East',
+}
+
+_SHEET_STATE = {
+    'walk':   'Walk',
+    'sprint': 'Walk',   # sprint reuses walk cycle at higher playback fps
+    'idle':   'Idle',
+    'shoot':  'Shoot',
+    'reload': 'Reload',
+    'hurt':   'Hurt',
+    'dead':   'Dead',
+}
+
+# Sheets hold their frames after first parse: {(state, direction): [Surface]}
+_sheet_cache = {}
+
+
+def _slice_sheet(sheet):
+    """Split a horizontal spritesheet into frames via transparent-gap detection.
+
+    PixelLab sheets have variable-width frames separated by fully transparent
+    columns. Returns a list of Surfaces cropped to each frame's bounding box.
+    """
+    sw, sh = sheet.get_size()
+    try:
+        import numpy as _np
+        alpha = pygame.surfarray.array_alpha(sheet)  # shape (w, h)
+        col_has = (alpha > 0).any(axis=1)
+    except Exception:
+        # numpy unavailable — scan pixels directly
+        col_has = []
+        for x in range(sw):
+            has = False
+            for y in range(sh):
+                if sheet.get_at((x, y))[3] > 0:
+                    has = True
+                    break
+            col_has.append(has)
+
+    # Runs of opaque columns = frames
+    bounds = []
+    in_run, start = False, 0
+    for x in range(sw):
+        if col_has[x] and not in_run:
+            start, in_run = x, True
+        elif not col_has[x] and in_run:
+            bounds.append((start, x))
+            in_run = False
+    if in_run:
+        bounds.append((start, sw))
+
+    frames = []
+    for s, e in bounds:
+        if e - s < 4:   # ignore stray noise columns
+            continue
+        frames.append((s, e))
+
+    # Handle merged frames: if one run is much wider than the median run,
+    # the sheet's frames touch without a transparent gap — split the run
+    # evenly into the number of median-width frames it spans.
+    if len(frames) >= 2:
+        widths = sorted(e - s for s, e in frames)
+        median_w = widths[len(widths) // 2]
+        expanded = []
+        for s, e in frames:
+            w = e - s
+            if w > median_w * 1.8:
+                n = max(2, round(w / median_w))
+                step = w / n
+                for i in range(n):
+                    expanded.append((int(s + i * step), int(s + (i + 1) * step)))
+            else:
+                expanded.append((s, e))
+        frames = expanded
+
+    surfaces = []
+    for s, e in frames:
+        # Vertical bounding box within the run
+        top, bot = sh, 0
+        for x in range(s, e):
+            for y in range(sh):
+                if sheet.get_at((x, y))[3] > 0:
+                    top = min(top, y)
+                    bot = max(bot, y + 1)
+                    break
+            for y in range(sh - 1, -1, -1):
+                if sheet.get_at((x, y))[3] > 0:
+                    bot = max(bot, y + 1)
+                    break
+        if bot <= top:
+            top, bot = 0, sh
+        surfaces.append(sheet.subsurface(pygame.Rect(s, top, e - s, bot - top)).copy())
+    return surfaces
+
+
+def _frames_from_sheets(state, direction, sprite_dir):
+    """Return frames for (state, direction) from PixelLab sheets, or None.
+
+    Dedicated sheet for the state wins. If only the Walk sheet exists, walk
+    and sprint get the full cycle and every other state holds the first walk
+    pose (static placeholder — replaced automatically once dedicated sheets
+    are added). No sprites are generated or altered programmatically.
+    """
+    import os as _os
+
+    sheet_dir_name = _SHEET_DIRECTION.get(direction)
+    sheet_state = _SHEET_STATE.get(state)
+    if sheet_dir_name is None or sheet_state is None:
+        return None
+
+    def load_sheet(state_name):
+        key = (state_name, direction)
+        if key in _sheet_cache:
+            return _sheet_cache[key]
+        path = _os.path.join(
+            sprite_dir, f'Marine_{state_name}_{sheet_dir_name}_Spritesheet.png')
+        frames = None
+        if _os.path.exists(path):
+            sheet = pygame.image.load(path).convert_alpha()
+            frames = _slice_sheet(sheet) or None
+        _sheet_cache[key] = frames
+        return frames
+
+    # 1. Dedicated sheet for this state (e.g. Marine_Idle_South_...)
+    dedicated = load_sheet(sheet_state)
+    if dedicated:
+        return [f.copy() for f in dedicated]
+
+    # 2. Walk-sheet fallback: full cycle for walk/sprint, first pose held
+    #    for the remaining states until their sheets are generated.
+    walk = load_sheet('Walk')
+    if not walk:
+        return None
+    if state in ('walk', 'sprint'):
+        return [f.copy() for f in walk]
+    pose = walk[0]
+    frame_counts = {'idle': 2, 'shoot': 2, 'reload': 3, 'hurt': 1, 'dead': 3}
+    n = frame_counts.get(state, 1)
+    return [pose.copy() for _ in range(n)]
+
+
 def make_player_frames(state, direction='front'):
     """Build player sprite frames for a given animation state + direction.
 
-    Loads transparent PNG sprites from assets/sprites/.
-    Falls back to JSON sprite data if PNGs are not available.
+    Priority:
+      1. PixelLab walk spritesheets (assets/sprites/Marine_Walk_*_Spritesheet.png)
+         - walk/sprint play the full cycle; other states hold the first pose
+           until dedicated PixelLab sheets for those states are dropped in.
+      2. Legacy individual PNGs (marine_{dir}_{state}_48.png)
+      3. JSON sprite data
+      4. Procedural text-grid fallback
     """
     # Try PNG sprites first
     import os as _os
@@ -582,6 +739,11 @@ def make_player_frames(state, direction='front'):
                                'assets', 'sprites')
     if getattr(sys, 'frozen', False):
         sprite_dir = _os.path.join(sys._MEIPASS, 'assets', 'sprites')
+
+    # ---- 1. PixelLab spritesheets ----
+    frames = _frames_from_sheets(state, direction, sprite_dir)
+    if frames:
+        return frames
 
     if _os.path.isdir(sprite_dir):
         frames = []

@@ -35,3 +35,6 @@ sprites_png/
 *.save
 *.json.bak
 XenoBreach.spec
+.hermes/
+sprites_gen/
+spider_debug.png
